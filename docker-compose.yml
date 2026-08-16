@@ -1,0 +1,206 @@
+services:
+  postgres:
+    image: postgres:17.10
+    container_name: ecommerce-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-airflow} -d ${POSTGRES_DB:-ecommerce}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    image: apache/airflow:3.3.0-python3.12
+    container_name: airflow-init
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
+
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-dev_jwt_secret_change_me}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-dev_api_secret_change_me}
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+      - ./dbt:/opt/airflow/dbt
+
+    command:
+      - bash
+      - -c
+      - |
+        airflow db migrate
+
+  airflow-api-server:
+    image: apache/airflow:3.3.0-python3.12
+    container_name: airflow-api-server
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
+
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-dev_jwt_secret_change_me}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-dev_api_secret_change_me}
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+      - ./dbt:/opt/airflow/dbt
+
+    command: api-server
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "http://localhost:8080/api/v2/monitor/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    image: apache/airflow:3.3.0-python3.12
+    container_name: airflow-scheduler
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
+
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-dev_jwt_secret_change_me}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-dev_api_secret_change_me}
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+      - ./dbt:/opt/airflow/dbt
+
+    command: scheduler
+
+  airflow-dag-processor:
+    image: apache/airflow:3.3.0-python3.12
+    container_name: airflow-dag-processor
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
+
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-dev_jwt_secret_change_me}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-dev_api_secret_change_me}
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+      - ./dbt:/opt/airflow/dbt
+
+    command: dag-processor
+
+  airflow-triggerer:
+    image: apache/airflow:3.3.0-python3.12
+    container_name: airflow-triggerer
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
+        postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
+
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-dev_jwt_secret_change_me}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-dev_api_secret_change_me}
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/config:/opt/airflow/config
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+      - ./dbt:/opt/airflow/dbt
+
+    command: triggerer
+
+volumes:
+  postgres_data:
