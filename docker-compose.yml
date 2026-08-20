@@ -39,6 +39,18 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       PYTHONPATH: /opt/airflow/src
 
+      DATA_MODE: ${DATA_MODE:-demo}
+      DATA_DEMO_DIR: ${DATA_DEMO_DIR:-data/demo}
+      DATA_PRIVATE_DIR: ${DATA_PRIVATE_DIR:-data/private}
+      DATA_RAW_DIR: ${DATA_RAW_DIR:-data/raw}
+      DATA_PROCESSED_DIR: ${DATA_PROCESSED_DIR:-data/processed}
+
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
         postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
 
@@ -75,6 +87,18 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       PYTHONPATH: /opt/airflow/src
+
+      DATA_MODE: ${DATA_MODE:-demo}
+      DATA_DEMO_DIR: ${DATA_DEMO_DIR:-data/demo}
+      DATA_PRIVATE_DIR: ${DATA_PRIVATE_DIR:-data/private}
+      DATA_RAW_DIR: ${DATA_RAW_DIR:-data/raw}
+      DATA_PROCESSED_DIR: ${DATA_PROCESSED_DIR:-data/processed}
+
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
 
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
         postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
@@ -124,6 +148,18 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       PYTHONPATH: /opt/airflow/src
 
+      DATA_MODE: ${DATA_MODE:-demo}
+      DATA_DEMO_DIR: ${DATA_DEMO_DIR:-data/demo}
+      DATA_PRIVATE_DIR: ${DATA_PRIVATE_DIR:-data/private}
+      DATA_RAW_DIR: ${DATA_RAW_DIR:-data/raw}
+      DATA_PROCESSED_DIR: ${DATA_PROCESSED_DIR:-data/processed}
+
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
         postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
 
@@ -157,6 +193,18 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       PYTHONPATH: /opt/airflow/src
 
+      DATA_MODE: ${DATA_MODE:-demo}
+      DATA_DEMO_DIR: ${DATA_DEMO_DIR:-data/demo}
+      DATA_PRIVATE_DIR: ${DATA_PRIVATE_DIR:-data/private}
+      DATA_RAW_DIR: ${DATA_RAW_DIR:-data/raw}
+      DATA_PROCESSED_DIR: ${DATA_PROCESSED_DIR:-data/processed}
+
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
         postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
 
@@ -189,6 +237,18 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       PYTHONPATH: /opt/airflow/src
+
+      DATA_MODE: ${DATA_MODE:-demo}
+      DATA_DEMO_DIR: ${DATA_DEMO_DIR:-data/demo}
+      DATA_PRIVATE_DIR: ${DATA_PRIVATE_DIR:-data/private}
+      DATA_RAW_DIR: ${DATA_RAW_DIR:-data/raw}
+      DATA_PROCESSED_DIR: ${DATA_PROCESSED_DIR:-data/processed}
+
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
 
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
         postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
