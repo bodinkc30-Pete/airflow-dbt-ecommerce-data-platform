@@ -23,6 +23,7 @@ class FileMetadata:
 @dataclass(frozen=True)
 class FileRegistrationResult:
     ingestion_file_id: int
+    ingestion_run_id: int
     source_name: str
     file_hash_sha256: str
     status: str
@@ -81,6 +82,7 @@ def find_registered_file(
     query = """
         SELECT
             ingestion_file_id,
+            ingestion_run_id,
             source_name,
             file_hash_sha256,
             status
@@ -106,9 +108,10 @@ def find_registered_file(
 
     return FileRegistrationResult(
         ingestion_file_id=row[0],
-        source_name=row[1],
-        file_hash_sha256=row[2].strip(),
-        status=row[3],
+        ingestion_run_id=row[1],
+        source_name=row[2],
+        file_hash_sha256=row[3].strip(),
+        status=row[4],
         is_duplicate=True,
     )
 
@@ -150,6 +153,7 @@ def register_file(
         )
         RETURNING
             ingestion_file_id,
+            ingestion_run_id,
             source_name,
             file_hash_sha256,
             status;
@@ -173,9 +177,10 @@ def register_file(
 
     return FileRegistrationResult(
         ingestion_file_id=row[0],
-        source_name=row[1],
-        file_hash_sha256=row[2].strip(),
-        status=row[3],
+        ingestion_run_id=row[1],
+        source_name=row[2],
+        file_hash_sha256=row[3].strip(),
+        status=row[4],
         is_duplicate=False,
     )
 

@@ -134,7 +134,8 @@ def test_duplicate_successful_file_is_skipped_without_duplicate_raw_rows(
     )
 
     first_decision = decide_file_processing(
-        first_registration
+        first_registration,
+        current_ingestion_run_id=ingestion_run_id,
     )
 
     assert first_decision.should_process is True
@@ -201,7 +202,8 @@ def test_duplicate_successful_file_is_skipped_without_duplicate_raw_rows(
     assert second_registration.status == "success"
 
     second_decision = decide_file_processing(
-        second_registration
+        second_registration,
+        current_ingestion_run_id=ingestion_run_id,
     )
 
     assert second_decision.should_process is False

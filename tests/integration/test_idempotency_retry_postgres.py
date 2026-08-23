@@ -247,7 +247,8 @@ def test_failed_file_can_retry_without_duplicate_raw_rows(
         )
 
         retry_decision = decide_file_processing(
-            retry_registration
+            retry_registration,
+            current_ingestion_run_id=ingestion_run_id,
         )
 
         assert retry_decision.action == "process"
@@ -278,4 +279,88 @@ def test_failed_file_can_retry_without_duplicate_raw_rows(
             postgres_connection,
             ingestion_file_id=ingestion_file_id,
             ingestion_run_id=ingestion_run_id,
+        )
+
+
+def test_failed_file_from_different_run_requires_reprocessing_policy(
+    postgres_connection,
+    tmp_path: Path,
+) -> None:
+    token = uuid4().hex
+
+    source_file = tmp_path / f"orders_cross_run_retry_{token}.csv"
+    source_file.write_text(
+        (
+            "Order ID,SKU ID\n"
+            f"ORDER_CROSS_RUN_{token}_001,SKU_CROSS_RUN_{token}_001\n"
+        ),
+        encoding="utf-8",
+    )
+
+    metadata = build_file_metadata(
+        source_name="orders",
+        file_path=source_file,
+    )
+
+    first_run_id: int | None = None
+    second_run_id: int | None = None
+    ingestion_file_id: int | None = None
+
+    try:
+        first_run_id = _create_ingestion_run(
+            postgres_connection
+        )
+
+        first_registration = register_file(
+            connection=postgres_connection,
+            ingestion_run_id=first_run_id,
+            metadata=metadata,
+        )
+        postgres_connection.commit()
+
+        ingestion_file_id = first_registration.ingestion_file_id
+
+        _mark_file_status(
+            postgres_connection,
+            ingestion_file_id,
+            "failed",
+        )
+
+        second_run_id = _create_ingestion_run(
+            postgres_connection
+        )
+
+        second_registration = register_file(
+            connection=postgres_connection,
+            ingestion_run_id=second_run_id,
+            metadata=metadata,
+        )
+
+        assert second_registration.is_duplicate is True
+        assert second_registration.status == "failed"
+        assert second_registration.ingestion_file_id == ingestion_file_id
+        assert second_registration.ingestion_run_id == first_run_id
+
+        decision = decide_file_processing(
+            second_registration,
+            current_ingestion_run_id=second_run_id,
+        )
+
+        assert decision.action == "block"
+        assert decision.reason == (
+            "cross_run_retry_requires_explicit_reprocessing_policy"
+        )
+        assert decision.should_process is False
+    finally:
+        if second_run_id is not None:
+            _cleanup_test_records(
+                postgres_connection,
+                ingestion_file_id=None,
+                ingestion_run_id=second_run_id,
+            )
+
+        _cleanup_test_records(
+            postgres_connection,
+            ingestion_file_id=ingestion_file_id,
+            ingestion_run_id=first_run_id,
         )

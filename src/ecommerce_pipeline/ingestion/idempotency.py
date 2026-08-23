@@ -24,6 +24,8 @@ class IdempotencyDecision:
 
 def decide_file_processing(
     registration: FileRegistrationResult,
+    *,
+    current_ingestion_run_id: int,
 ) -> IdempotencyDecision:
     """
     Decide whether a registered file is eligible for processing.
@@ -50,6 +52,14 @@ def decide_file_processing(
         )
 
     if registration.status == "failed":
+        if registration.ingestion_run_id != current_ingestion_run_id:
+            return IdempotencyDecision(
+                action="block",
+                reason=(
+                    "cross_run_retry_requires_explicit_reprocessing_policy"
+                ),
+            )
+
         return IdempotencyDecision(
             action="process",
             reason="retry_failed_file",
