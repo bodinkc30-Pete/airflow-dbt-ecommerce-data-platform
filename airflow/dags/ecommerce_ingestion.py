@@ -3,7 +3,12 @@ import os
 from airflow.sdk import DAG, get_current_context, setup, task, teardown
 
 from ecommerce_pipeline.ingestion.file_discovery import discover_all_sources
-from ecommerce_pipeline.ingestion.file_registry import connect_postgres
+from ecommerce_pipeline.ingestion.file_registry import (
+    build_file_metadata,
+    connect_postgres,
+    register_file,
+)
+from ecommerce_pipeline.ingestion.idempotency import decide_file_processing
 from ecommerce_pipeline.ingestion.run_lifecycle import (
     create_ingestion_run,
     mark_run_failed,
@@ -15,6 +20,7 @@ from ecommerce_pipeline.ingestion.transaction import transaction_scope
 _WORK_TASK_IDS = (
     "validate_ingestion_runtime",
     "discover_demo_source_files",
+    "register_discovered_files",
 )
 _SUPPORTED_AIRFLOW_RUN_TYPES = {"manual", "scheduled", "backfill"}
 
@@ -83,15 +89,76 @@ with DAG(
         return source_names
 
     @task
-    def discover_demo_source_files() -> dict[str, list[str]]:
+    def discover_demo_source_files() -> dict[str, list[dict[str, str]]]:
         """Discover portfolio-safe demo input files using the ingestion service."""
         input_directory = os.environ["DATA_DEMO_DIR"]
         discovered = discover_all_sources(input_directory)
 
         return {
-            source_name: [item.file_name for item in files]
+            source_name: [
+                {
+                    "file_name": item.file_name,
+                    "file_path": str(item.file_path),
+                }
+                for item in files
+            ]
             for source_name, files in discovered.items()
         }
+
+    @task
+    def register_discovered_files(
+        ingestion_run_id: int,
+        discovered: dict[str, list[dict[str, str]]],
+    ) -> list[dict[str, str | int]]:
+        """Register files and apply the ingestion idempotency policy."""
+        metadata_batch = [
+            build_file_metadata(
+                source_name=source_name,
+                file_path=file_info["file_path"],
+            )
+            for source_name, files in discovered.items()
+            for file_info in files
+        ]
+
+        registration_results: list[dict[str, str | int]] = []
+        connection = _connect_application_postgres()
+
+        try:
+            with transaction_scope(connection):
+                for metadata in metadata_batch:
+                    registration = register_file(
+                        connection=connection,
+                        ingestion_run_id=ingestion_run_id,
+                        metadata=metadata,
+                    )
+                    decision = decide_file_processing(
+                        registration,
+                        current_ingestion_run_id=ingestion_run_id,
+                    )
+
+                    if decision.action == "block":
+                        raise RuntimeError(
+                            "File processing blocked by idempotency policy: "
+                            f"source={metadata.source_name}, "
+                            f"file={metadata.file_name}, "
+                            f"reason={decision.reason}"
+                        )
+
+                    registration_results.append(
+                        {
+                            "source_name": metadata.source_name,
+                            "file_name": metadata.file_name,
+                            "file_path": metadata.file_path,
+                            "file_hash_sha256": metadata.file_hash_sha256,
+                            "ingestion_file_id": registration.ingestion_file_id,
+                            "action": decision.action,
+                            "reason": decision.reason,
+                        }
+                    )
+        finally:
+            connection.close()
+
+        return registration_results
 
     @teardown(on_failure_fail_dagrun=True)
     def finalize_airflow_ingestion_run(ingestion_run_id: int) -> None:
@@ -188,8 +255,12 @@ with DAG(
     with finalize_airflow_ingestion_run(ingestion_run_id):
         validate_runtime = validate_ingestion_runtime()
         discovered_files = discover_demo_source_files()
+        registered_files = register_discovered_files(
+            ingestion_run_id=ingestion_run_id,
+            discovered=discovered_files,
+        )
 
-        validate_runtime >> discovered_files
+        validate_runtime >> discovered_files >> registered_files
 
 
 if __name__ == "__main__":
