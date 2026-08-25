@@ -2,6 +2,11 @@ import os
 
 from airflow.sdk import DAG, get_current_context, setup, task, teardown
 
+from ecommerce_pipeline.ingestion.audit_lifecycle import (
+    mark_file_failed,
+    mark_file_processing,
+)
+from ecommerce_pipeline.ingestion.extraction_adapters import extract_source_file
 from ecommerce_pipeline.ingestion.file_discovery import discover_all_sources
 from ecommerce_pipeline.ingestion.file_registry import (
     build_file_metadata,
@@ -14,6 +19,7 @@ from ecommerce_pipeline.ingestion.run_lifecycle import (
     mark_run_failed,
     mark_run_success,
 )
+from ecommerce_pipeline.ingestion.schema_validation import validate_schema
 from ecommerce_pipeline.ingestion.source_registry import list_source_names
 from ecommerce_pipeline.ingestion.transaction import transaction_scope
 
@@ -21,6 +27,7 @@ _WORK_TASK_IDS = (
     "validate_ingestion_runtime",
     "discover_demo_source_files",
     "register_discovered_files",
+    "extract_and_validate_registered_files",
 )
 _SUPPORTED_AIRFLOW_RUN_TYPES = {"manual", "scheduled", "backfill"}
 
@@ -35,6 +42,36 @@ def _connect_application_postgres():
     )
     connection.autocommit = False
     return connection
+
+
+def _get_run_file_audit_counts(
+    connection,
+    *,
+    ingestion_run_id: int,
+) -> tuple[int, int, int, int, int]:
+    """Aggregate persisted file audit counters for one ingestion run."""
+    query = """
+        SELECT
+            COUNT(*) FILTER (WHERE status = 'success'),
+            COUNT(*) FILTER (WHERE status = 'failed'),
+            COALESCE(SUM(rows_discovered), 0),
+            COALESCE(SUM(rows_loaded), 0),
+            COALESCE(SUM(rows_rejected), 0)
+        FROM audit.ingestion_files
+        WHERE ingestion_run_id = %s;
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, (ingestion_run_id,))
+        row = cursor.fetchone()
+
+    if row is None:
+        raise RuntimeError(
+            "Failed to aggregate ingestion file audit counters: "
+            f"ingestion_run_id={ingestion_run_id}"
+        )
+
+    return tuple(int(value) for value in row)
 
 
 def _normalize_airflow_run_type(run_type: object) -> str:
@@ -160,6 +197,86 @@ with DAG(
 
         return registration_results
 
+    @task
+    def extract_and_validate_registered_files(
+        registered_files: list[dict[str, str | int]],
+    ) -> list[dict[str, str | int | list[str]]]:
+        """Extract processable files and validate schemas before loading."""
+        validation_summaries: list[
+            dict[str, str | int | list[str]]
+        ] = []
+
+        for file_info in registered_files:
+            if file_info["action"] != "process":
+                continue
+
+            source_name = str(file_info["source_name"])
+            file_name = str(file_info["file_name"])
+            file_path = str(file_info["file_path"])
+            ingestion_file_id = int(file_info["ingestion_file_id"])
+
+            extraction = extract_source_file(
+                source_name=source_name,
+                file_path=file_path,
+            )
+            validation = validate_schema(
+                source_name=source_name,
+                observed_columns=extraction.columns,
+            )
+
+            issue_codes = sorted(
+                {issue.code for issue in validation.issues}
+            )
+
+            if validation.status == "INVALID":
+                issues = ",".join(issue_codes) or "none"
+                error_message = (
+                    "Schema validation failed before load: "
+                    f"source={source_name}, "
+                    f"file={file_name}, "
+                    f"observed_columns="
+                    f"{validation.observed_column_count}, "
+                    f"expected_columns="
+                    f"{validation.expected_column_count}, "
+                    f"issues={issues}"
+                )
+
+                connection = _connect_application_postgres()
+
+                try:
+                    with transaction_scope(connection):
+                        mark_file_processing(
+                            connection,
+                            ingestion_file_id=ingestion_file_id,
+                            rows_discovered=extraction.row_count,
+                        )
+                        mark_file_failed(
+                            connection,
+                            ingestion_file_id=ingestion_file_id,
+                            rows_discovered=extraction.row_count,
+                            rows_loaded=0,
+                            rows_rejected=extraction.row_count,
+                            error_message=error_message,
+                        )
+                finally:
+                    connection.close()
+
+                raise RuntimeError(error_message)
+
+            validation_summaries.append(
+                {
+                    "source_name": source_name,
+                    "file_name": file_name,
+                    "ingestion_file_id": ingestion_file_id,
+                    "row_count": extraction.row_count,
+                    "column_count": extraction.column_count,
+                    "schema_status": validation.status,
+                    "issue_codes": issue_codes,
+                }
+            )
+
+        return validation_summaries
+
     @teardown(on_failure_fail_dagrun=True)
     def finalize_airflow_ingestion_run(ingestion_run_id: int) -> None:
         """Finalize the application audit run from the observed Airflow work states."""
@@ -233,15 +350,38 @@ with DAG(
                         for task_id in _WORK_TASK_IDS
                     )
 
+                    discovered = task_instance.xcom_pull(
+                        task_ids="discover_demo_source_files",
+                        dag_id=task_instance.dag_id,
+                        run_id=task_instance.run_id,
+                        default=None,
+                    )
+                    files_discovered = (
+                        sum(len(files) for files in discovered.values())
+                        if isinstance(discovered, dict)
+                        else 0
+                    )
+
+                    (
+                        files_processed,
+                        files_failed,
+                        rows_discovered,
+                        rows_loaded,
+                        rows_rejected,
+                    ) = _get_run_file_audit_counts(
+                        connection,
+                        ingestion_run_id=ingestion_run_id,
+                    )
+
                     mark_run_failed(
                         connection,
                         ingestion_run_id=ingestion_run_id,
-                        files_discovered=0,
-                        files_processed=0,
-                        files_failed=0,
-                        rows_discovered=0,
-                        rows_loaded=0,
-                        rows_rejected=0,
+                        files_discovered=files_discovered,
+                        files_processed=files_processed,
+                        files_failed=files_failed,
+                        rows_discovered=rows_discovered,
+                        rows_loaded=rows_loaded,
+                        rows_rejected=rows_rejected,
                         error_message=teardown_error,
                     )
         finally:
@@ -259,8 +399,16 @@ with DAG(
             ingestion_run_id=ingestion_run_id,
             discovered=discovered_files,
         )
+        validated_files = extract_and_validate_registered_files(
+            registered_files
+        )
 
-        validate_runtime >> discovered_files >> registered_files
+        (
+            validate_runtime
+            >> discovered_files
+            >> registered_files
+            >> validated_files
+        )
 
 
 if __name__ == "__main__":
