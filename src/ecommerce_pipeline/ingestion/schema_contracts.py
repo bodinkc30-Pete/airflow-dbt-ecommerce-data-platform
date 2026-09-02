@@ -65,6 +65,7 @@ SCHEMA_CONTRACTS: dict[str, SchemaContract] = {
                     "date",
                     "Metric Date",
                     "metric_date",
+                    "\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48",
                 ),
             ),
         ),

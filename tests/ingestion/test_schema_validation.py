@@ -307,6 +307,21 @@ def test_shop_analytics_accepts_date_alias() -> None:
     assert result.status == "VALID"
 
 
+def test_shop_analytics_accepts_thai_date_alias() -> None:
+    columns = _make_columns(
+        28,
+        required=("\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48",),
+    )
+
+    result = validate_schema(
+        source_name="shop_analytics",
+        observed_columns=columns,
+    )
+
+    assert result.status == "VALID"
+    assert result.missing_required_columns == ()
+
+
 def test_live_performance_accepts_metric_date_alias() -> None:
     columns = _make_columns(
         18,
