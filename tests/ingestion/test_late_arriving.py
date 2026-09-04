@@ -73,16 +73,17 @@ def test_historical_backfill_processes_without_rewinding_watermark() -> None:
     assert decision.is_backfill is True
 
 
-def test_campaign_metric_date_policy_is_blocked_until_contract_verified() -> None:
+def test_campaign_metric_date_policy_processes_after_contract_verified() -> None:
     decision = decide_metric_date_processing(
         source_name="campaign_overview",
         candidate_date=date(2026, 8, 1),
         current_watermark=date(2026, 7, 31),
     )
 
-    assert decision.should_process is False
-    assert decision.should_advance_watermark is False
-    assert decision.reason == "metric_date_contract_not_verified"
+    assert decision.should_process is True
+    assert decision.should_advance_watermark is True
+    assert decision.reason == "newer_metric_date"
+    assert decision.is_late_arriving is False
 
 
 def test_snapshot_source_is_blocked_from_metric_date_policy() -> None:

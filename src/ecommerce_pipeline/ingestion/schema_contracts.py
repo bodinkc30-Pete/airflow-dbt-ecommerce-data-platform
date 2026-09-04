@@ -75,7 +75,18 @@ SCHEMA_CONTRACTS: dict[str, SchemaContract] = {
         expected_column_count=7,
         header_strategy="flat",
         drift_policy="strict",
-        required_columns=(),
+        required_columns=(
+            RequiredColumn(
+                canonical_name="metric_date",
+                accepted_source_names=(
+                    "Date",
+                    "date",
+                    "Metric Date",
+                    "metric_date",
+                    "\u0E15\u0E32\u0E21\u0E27\u0E31\u0E19",
+                ),
+            ),
+        ),
     ),
     "live_performance": SchemaContract(
         source_name="live_performance",

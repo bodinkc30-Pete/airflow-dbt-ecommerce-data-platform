@@ -336,3 +336,43 @@ def test_extraction_result_preserves_resolved_file_path(
     )
 
     assert result.file_path == file_path.resolve()
+
+
+def test_extract_campaign_overview_excludes_non_daily_footer_row(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "campaign.xlsx"
+
+    date_header = "\u0e15\u0e32\u0e21\u0e27\u0e31\u0e19"
+
+    pd.DataFrame(
+        [
+            ["2026-07-01", "10", "1", "10", "20", "2", "THB"],
+            ["2026-07-02", "20", "2", "10", "40", "2", "THB"],
+            ["-", "30", "3", "10", "60", "2", "THB"],
+        ],
+        columns=[
+            date_header,
+            "metric_2",
+            "metric_3",
+            "metric_4",
+            "metric_5",
+            "metric_6",
+            "metric_7",
+        ],
+    ).to_excel(
+        file_path,
+        index=False,
+        sheet_name="Sheet1",
+    )
+
+    result = extract_source_file(
+        source_name="campaign_overview",
+        file_path=file_path,
+    )
+
+    assert result.row_count == 2
+    assert result.dataframe.iloc[:, 0].tolist() == [
+        "2026-07-01",
+        "2026-07-02",
+    ]

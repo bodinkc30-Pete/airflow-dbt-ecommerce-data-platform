@@ -269,8 +269,21 @@ def test_validate_schema_can_report_multiple_errors() -> None:
     assert "MISSING_REQUIRED_COLUMN" in issue_codes
 
 
-def test_campaign_schema_can_validate_without_invented_required_columns() -> None:
+def test_campaign_overview_requires_metric_date() -> None:
     columns = _make_columns(7)
+
+    result = validate_schema(
+        source_name="campaign_overview",
+        observed_columns=columns,
+    )
+
+    assert result.status == "INVALID"
+    assert result.missing_required_columns == ("metric_date",)
+
+
+def test_campaign_overview_accepts_thai_daily_date_alias() -> None:
+    columns = _make_columns(7)
+    columns[0] = "\u0E15\u0E32\u0E21\u0E27\u0E31\u0E19"
 
     result = validate_schema(
         source_name="campaign_overview",

@@ -206,6 +206,19 @@ def extract_source_file(
         for column in dataframe.columns
     )
 
+    campaign_date_header = "\u0e15\u0e32\u0e21\u0e27\u0e31\u0e19"
+    if (
+        source_name == "campaign_overview"
+        and campaign_date_header in dataframe.columns
+    ):
+        footer_mask = (
+            dataframe[campaign_date_header]
+            .astype(str)
+            .str.strip()
+            .eq("-")
+        )
+        dataframe = dataframe.loc[~footer_mask].copy()
+
     return ExtractionResult(
         source_name=source_name,
         file_path=path,

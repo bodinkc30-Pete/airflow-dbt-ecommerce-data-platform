@@ -162,10 +162,14 @@ def test_sku_master_requires_sku_id_and_product_id() -> None:
     }
 
 
-def test_campaign_overview_does_not_invent_unverified_required_columns() -> None:
+def test_campaign_overview_requires_verified_metric_date() -> None:
     contract = get_schema_contract("campaign_overview")
 
-    assert contract.required_columns == ()
+    assert len(contract.required_columns) == 1
+    required = contract.required_columns[0]
+
+    assert required.canonical_name == "metric_date"
+    assert "\u0E15\u0E32\u0E21\u0E27\u0E31\u0E19" in required.accepted_source_names
 
 
 def test_get_schema_contract_returns_registered_contract() -> None:
