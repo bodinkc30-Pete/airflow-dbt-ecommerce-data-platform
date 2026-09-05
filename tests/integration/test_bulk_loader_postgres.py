@@ -14,6 +14,7 @@ from ecommerce_pipeline.ingestion.file_registry import (
     connect_postgres,
     register_file,
 )
+from ecommerce_pipeline.ingestion.load_contracts import get_load_contract
 
 
 @pytest.fixture
@@ -181,3 +182,150 @@ def test_bulk_load_orders_into_postgres(
         ingestion_run_id,
         registered_file.ingestion_file_id,
     )
+
+
+def test_bulk_load_campaign_overview_into_postgres(
+    postgres_connection,
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "campaign_bulk_load_integration.xlsx"
+    source_file.write_bytes(b"synthetic-campaign-integration")
+
+    metadata = build_file_metadata(
+        source_name="campaign_overview",
+        file_path=source_file,
+    )
+
+    ingestion_run_id = create_test_ingestion_run(
+        postgres_connection
+    )
+
+    registered_file = register_file(
+        connection=postgres_connection,
+        ingestion_run_id=ingestion_run_id,
+        metadata=metadata,
+    )
+
+    current_shop_suffix = (
+        " (\u0E23\u0E49\u0E32\u0E19\u0E04\u0E49\u0E32"
+        "\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19)"
+    )
+
+    dataframe = pd.DataFrame(
+        {
+            "\u0E15\u0E32\u0E21\u0E27\u0E31\u0E19": [
+                "2026-08-01",
+                "2026-08-02",
+            ],
+            "\u0E15\u0E49\u0E19\u0E17\u0E38\u0E19": [
+                "100.00",
+                "200.00",
+            ],
+            (
+                "\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07"
+                "\u0E0B\u0E37\u0E49\u0E2D SKU"
+                + current_shop_suffix
+            ): ["2", "4"],
+            (
+                "\u0E04\u0E48\u0E32\u0E43\u0E0A\u0E49"
+                "\u0E08\u0E48\u0E32\u0E22\u0E15\u0E48\u0E2D"
+                "\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07"
+                "\u0E0B\u0E37\u0E49\u0E2D"
+                + current_shop_suffix
+            ): ["50.00", "50.00"],
+            (
+                "\u0E23\u0E32\u0E22\u0E44\u0E14\u0E49"
+                "\u0E02\u0E31\u0E49\u0E19\u0E15\u0E49\u0E19"
+                + current_shop_suffix
+            ): ["300.00", "600.00"],
+            ("ROI" + current_shop_suffix): ["3.00", "3.00"],
+            "\u0E2A\u0E01\u0E38\u0E25\u0E40\u0E07\u0E34\u0E19": [
+                "THB",
+                "THB",
+            ],
+        }
+    )
+
+    ingested_at = datetime(
+        2026,
+        8,
+        17,
+        0,
+        0,
+        tzinfo=UTC,
+    )
+
+    lineage = LineageMetadata(
+        source_file=source_file.name,
+        batch_id="batch_campaign_integration_001",
+        file_hash=metadata.file_hash_sha256,
+        pipeline_run_id=ingestion_run_id,
+        ingestion_file_id=registered_file.ingestion_file_id,
+        ingested_at=ingested_at,
+    )
+
+    contract = get_load_contract("campaign_overview")
+
+    result = bulk_load_source(
+        connection=postgres_connection,
+        source_name="campaign_overview",
+        dataframe=dataframe,
+        column_mapping=contract.column_mapping,
+        lineage=lineage,
+    )
+
+    assert result.source_name == "campaign_overview"
+    assert result.target_table == "raw.campaign_daily"
+    assert result.rows_attempted == 2
+    assert result.rows_loaded == 2
+
+    query = """
+        SELECT
+            metric_date,
+            ad_cost,
+            sku_orders,
+            cost_per_order,
+            gross_revenue,
+            roi,
+            currency,
+            _source_row_number,
+            _pipeline_run_id,
+            _ingestion_file_id
+        FROM raw.campaign_daily
+        WHERE _ingestion_file_id = %s
+        ORDER BY _source_row_number;
+    """
+
+    with postgres_connection.cursor() as cursor:
+        cursor.execute(
+            query,
+            (registered_file.ingestion_file_id,),
+        )
+        rows = cursor.fetchall()
+
+    assert rows == [
+        (
+            "2026-08-01",
+            "100.00",
+            "2",
+            "50.00",
+            "300.00",
+            "3.00",
+            "THB",
+            1,
+            ingestion_run_id,
+            registered_file.ingestion_file_id,
+        ),
+        (
+            "2026-08-02",
+            "200.00",
+            "4",
+            "50.00",
+            "600.00",
+            "3.00",
+            "THB",
+            2,
+            ingestion_run_id,
+            registered_file.ingestion_file_id,
+        ),
+    ]
