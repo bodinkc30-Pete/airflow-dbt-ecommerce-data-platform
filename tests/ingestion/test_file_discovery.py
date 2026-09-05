@@ -147,8 +147,8 @@ def test_single_file_source_rejects_multiple_matches(
 def test_campaign_overview_returns_multiple_matching_files(
     tmp_path: Path,
 ) -> None:
-    first_file = tmp_path / "Campaign overview data first.xlsx"
-    second_file = tmp_path / "Campaign overview data second.xlsx"
+    first_file = tmp_path / "Campaign-overview-data-20260701-20260714.xlsx"
+    second_file = tmp_path / "Campaign-overview-data-20260715-20260731.xlsx"
 
     first_file.write_bytes(b"first")
     second_file.write_bytes(b"second")
