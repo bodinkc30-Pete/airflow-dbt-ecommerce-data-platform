@@ -27,7 +27,8 @@ services:
       retries: 5
 
   airflow-init:
-    image: apache/airflow:3.3.0-python3.12
+    build: .
+    image: ecommerce-airflow:3.3.0-python3.12
     container_name: airflow-init
 
     depends_on:
@@ -73,7 +74,8 @@ services:
         airflow db migrate
 
   airflow-api-server:
-    image: apache/airflow:3.3.0-python3.12
+    build: .
+    image: ecommerce-airflow:3.3.0-python3.12
     container_name: airflow-api-server
     restart: unless-stopped
 
@@ -133,7 +135,8 @@ services:
       retries: 5
 
   airflow-scheduler:
-    image: apache/airflow:3.3.0-python3.12
+    build: .
+    image: ecommerce-airflow:3.3.0-python3.12
     container_name: airflow-scheduler
     restart: unless-stopped
 
@@ -178,7 +181,8 @@ services:
     command: scheduler
 
   airflow-dag-processor:
-    image: apache/airflow:3.3.0-python3.12
+    build: .
+    image: ecommerce-airflow:3.3.0-python3.12
     container_name: airflow-dag-processor
     restart: unless-stopped
 
@@ -223,7 +227,8 @@ services:
     command: dag-processor
 
   airflow-triggerer:
-    image: apache/airflow:3.3.0-python3.12
+    build: .
+    image: ecommerce-airflow:3.3.0-python3.12
     container_name: airflow-triggerer
     restart: unless-stopped
 

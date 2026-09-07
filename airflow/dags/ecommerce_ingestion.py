@@ -5,7 +5,9 @@ from airflow.sdk import DAG, get_current_context, setup, task, teardown
 from ecommerce_pipeline.ingestion.audit_lifecycle import (
     mark_file_failed,
     mark_file_processing,
+    mark_file_success,
 )
+from ecommerce_pipeline.ingestion.bulk_loader import LineageMetadata, bulk_load_source
 from ecommerce_pipeline.ingestion.extraction_adapters import extract_source_file
 from ecommerce_pipeline.ingestion.file_discovery import discover_all_sources
 from ecommerce_pipeline.ingestion.file_registry import (
@@ -14,6 +16,10 @@ from ecommerce_pipeline.ingestion.file_registry import (
     register_file,
 )
 from ecommerce_pipeline.ingestion.idempotency import decide_file_processing
+from ecommerce_pipeline.ingestion.load_contracts import (
+    get_load_contract,
+    list_load_contract_names,
+)
 from ecommerce_pipeline.ingestion.run_lifecycle import (
     create_ingestion_run,
     mark_run_failed,
@@ -199,12 +205,14 @@ with DAG(
 
     @task
     def extract_and_validate_registered_files(
+        ingestion_run_id: int,
         registered_files: list[dict[str, str | int]],
     ) -> list[dict[str, str | int | list[str]]]:
-        """Extract processable files and validate schemas before loading."""
+        """Extract, validate, and load sources with verified load contracts."""
         validation_summaries: list[
             dict[str, str | int | list[str]]
         ] = []
+        load_contract_names = set(list_load_contract_names())
 
         for file_info in registered_files:
             if file_info["action"] != "process":
@@ -263,12 +271,78 @@ with DAG(
 
                 raise RuntimeError(error_message)
 
+            rows_loaded = 0
+
+            if source_name in load_contract_names:
+                contract = get_load_contract(source_name)
+                lineage = LineageMetadata(
+                    source_file=file_name,
+                    batch_id=(
+                        f"airflow_run_{ingestion_run_id}_"
+                        f"file_{ingestion_file_id}"
+                    ),
+                    file_hash=str(file_info["file_hash_sha256"]),
+                    pipeline_run_id=ingestion_run_id,
+                    ingestion_file_id=ingestion_file_id,
+                )
+                connection = _connect_application_postgres()
+
+                try:
+                    with transaction_scope(connection):
+                        mark_file_processing(
+                            connection,
+                            ingestion_file_id=ingestion_file_id,
+                            rows_discovered=extraction.row_count,
+                        )
+
+                    try:
+                        with transaction_scope(connection):
+                            load_result = bulk_load_source(
+                                connection=connection,
+                                source_name=source_name,
+                                dataframe=extraction.dataframe,
+                                column_mapping=contract.column_mapping,
+                                lineage=lineage,
+                            )
+                            mark_file_success(
+                                connection,
+                                ingestion_file_id=ingestion_file_id,
+                                rows_discovered=extraction.row_count,
+                                rows_loaded=load_result.rows_loaded,
+                                rows_rejected=(
+                                    extraction.row_count
+                                    - load_result.rows_loaded
+                                ),
+                            )
+                    except Exception as exc:
+                        error_message = (
+                            "Bulk load failed: "
+                            f"source={source_name}, "
+                            f"file={file_name}, "
+                            f"error={exc}"
+                        )
+                        with transaction_scope(connection):
+                            mark_file_failed(
+                                connection,
+                                ingestion_file_id=ingestion_file_id,
+                                rows_discovered=extraction.row_count,
+                                rows_loaded=0,
+                                rows_rejected=extraction.row_count,
+                                error_message=error_message,
+                            )
+                        raise RuntimeError(error_message) from exc
+                finally:
+                    connection.close()
+
+                rows_loaded = load_result.rows_loaded
+
             validation_summaries.append(
                 {
                     "source_name": source_name,
                     "file_name": file_name,
                     "ingestion_file_id": ingestion_file_id,
                     "row_count": extraction.row_count,
+                    "rows_loaded": rows_loaded,
                     "column_count": extraction.column_count,
                     "schema_status": validation.status,
                     "issue_codes": issue_codes,
@@ -333,16 +407,26 @@ with DAG(
                             len(files)
                             for files in discovered.values()
                         )
+                        (
+                            files_processed,
+                            files_failed,
+                            rows_discovered,
+                            rows_loaded,
+                            rows_rejected,
+                        ) = _get_run_file_audit_counts(
+                            connection,
+                            ingestion_run_id=ingestion_run_id,
+                        )
 
                         mark_run_success(
                             connection,
                             ingestion_run_id=ingestion_run_id,
                             files_discovered=files_discovered,
-                            files_processed=0,
-                            files_failed=0,
-                            rows_discovered=0,
-                            rows_loaded=0,
-                            rows_rejected=0,
+                            files_processed=files_processed,
+                            files_failed=files_failed,
+                            rows_discovered=rows_discovered,
+                            rows_loaded=rows_loaded,
+                            rows_rejected=rows_rejected,
                         )
                 else:
                     teardown_error = "Airflow work task failure: " + ", ".join(
@@ -400,7 +484,8 @@ with DAG(
             discovered=discovered_files,
         )
         validated_files = extract_and_validate_registered_files(
-            registered_files
+            ingestion_run_id=ingestion_run_id,
+            registered_files=registered_files,
         )
 
         (
