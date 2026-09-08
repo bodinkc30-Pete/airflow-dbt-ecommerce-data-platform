@@ -329,3 +329,85 @@ def test_bulk_load_campaign_overview_into_postgres(
             registered_file.ingestion_file_id,
         ),
     ]
+
+
+def test_bulk_load_shop_analytics_into_postgres(
+    postgres_connection,
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "shop_analytics_bulk_load_integration.xlsx"
+    source_file.write_bytes(b"synthetic-shop-analytics-integration")
+
+    metadata = build_file_metadata(
+        source_name="shop_analytics",
+        file_path=source_file,
+    )
+    ingestion_run_id = create_test_ingestion_run(postgres_connection)
+    registered_file = register_file(
+        connection=postgres_connection,
+        ingestion_run_id=ingestion_run_id,
+        metadata=metadata,
+    )
+
+    contract = get_load_contract("shop_analytics")
+    dataframe = pd.DataFrame(
+        {
+            source_column: [f"value_{index:02d}"]
+            for index, source_column in enumerate(
+                contract.column_mapping,
+                start=1,
+            )
+        }
+    )
+
+    lineage = LineageMetadata(
+        source_file=source_file.name,
+        batch_id="batch_shop_analytics_integration_001",
+        file_hash=metadata.file_hash_sha256,
+        pipeline_run_id=ingestion_run_id,
+        ingestion_file_id=registered_file.ingestion_file_id,
+        ingested_at=datetime(2026, 8, 17, tzinfo=UTC),
+    )
+
+    result = bulk_load_source(
+        connection=postgres_connection,
+        source_name="shop_analytics",
+        dataframe=dataframe,
+        column_mapping=contract.column_mapping,
+        lineage=lineage,
+    )
+
+    assert result.source_name == "shop_analytics"
+    assert result.target_table == "raw.shop_daily"
+    assert result.rows_attempted == 1
+    assert result.rows_loaded == 1
+
+    target_columns = tuple(contract.column_mapping.values())
+    query = f"""
+        SELECT
+            {", ".join(target_columns)},
+            _source_row_number,
+            _pipeline_run_id,
+            _ingestion_file_id
+        FROM raw.shop_daily
+        WHERE _ingestion_file_id = %s;
+    """
+
+    with postgres_connection.cursor() as cursor:
+        cursor.execute(
+            query,
+            (registered_file.ingestion_file_id,),
+        )
+        row = cursor.fetchone()
+
+    expected_business_values = tuple(
+        f"value_{index:02d}"
+        for index in range(1, 29)
+    )
+
+    assert row == (
+        *expected_business_values,
+        1,
+        ingestion_run_id,
+        registered_file.ingestion_file_id,
+    )

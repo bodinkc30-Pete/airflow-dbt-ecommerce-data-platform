@@ -29,6 +29,130 @@ _CAMPAIGN_ROI_HEADER = "ROI" + _CURRENT_SHOP_SUFFIX
 _CAMPAIGN_CURRENCY_HEADER = "\u0E2A\u0E01\u0E38\u0E25\u0E40\u0E07\u0E34\u0E19"
 
 
+_SHOP_ANALYTICS_COLUMN_MAPPING = {
+    "\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48": "metric_date",
+    "GMV": "gmv",
+    "\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d": "orders",
+    "\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32": "customers",
+    (
+        "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e17\u0e35"
+        "\u0e48\u0e02\u0e32\u0e22\u0e44\u0e14\u0e49"
+    ): "items_sold",
+    (
+        "\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35"
+        "\u0e48\u0e21\u0e35\u0e01\u0e32\u0e23\u0e04\u0e37"
+        "\u0e19\u0e40\u0e07\u0e34\u0e19"
+    ): "refunds",
+    "\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d SKU": "sku_orders",
+    "\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e23\u0e27\u0e21": "gross_revenue",
+    (
+        "\u0e22\u0e2d\u0e14\u0e01\u0e32\u0e23\u0e14\u0e39"
+        "\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e27\u0e47\u0e1a"
+    ): "page_views",
+    "\u0e1c\u0e39\u0e49\u0e40\u0e02\u0e49\u0e32\u0e0a\u0e21": "visitors",
+    (
+        "\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e04\u0e2d\u0e19"
+        "\u0e40\u0e27\u0e2d\u0e23\u0e4c\u0e0a\u0e31\u0e48"
+        "\u0e19"
+    ): "conversion_rate",
+    (
+        "\u0e22\u0e2d\u0e14\u0e01\u0e32\u0e23\u0e41\u0e2a"
+        "\u0e14\u0e07\u0e1c\u0e25\u0e2a\u0e34\u0e19\u0e04"
+        "\u0e49\u0e32"
+    ): "product_impressions",
+    (
+        "\u0e22\u0e2d\u0e14\u0e01\u0e32\u0e23\u0e41\u0e2a"
+        "\u0e14\u0e07\u0e1c\u0e25\u0e2a\u0e34\u0e19\u0e04"
+        "\u0e49\u0e32\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48"
+        "\u0e0b\u0e49\u0e33\u0e01\u0e31\u0e19"
+    ): "unique_product_impressions",
+    (
+        "\u0e22\u0e2d\u0e14\u0e04\u0e25\u0e34\u0e01\u0e2a"
+        "\u0e34\u0e19\u0e04\u0e49\u0e32"
+    ): "product_clicks",
+    (
+        "\u0e22\u0e2d\u0e14\u0e04\u0e25\u0e34\u0e01\u0e17"
+        "\u0e35\u0e48\u0e44\u0e21\u0e48\u0e0b\u0e49\u0e33"
+        "\u0e01\u0e31\u0e19"
+    ): "unique_product_clicks",
+    "AOV": "aov",
+    (
+        "GMV \u0e17\u0e35\u0e48\u0e21"
+        "\u0e32\u0e08\u0e32\u0e01 LIV"
+        "E \u0e02\u0e2d\u0e07\u0e04\u0e23\u0e35"
+        "\u0e40\u0e2d\u0e40\u0e15\u0e2d\u0e23\u0e4c"
+    ): "creator_live_attributed_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01 "
+        "LIVE \u0e02\u0e2d\u0e07"
+        "\u0e04\u0e23\u0e35\u0e40\u0e2d\u0e40\u0e15\u0e2d"
+        "\u0e23\u0e4c"
+    ): "creator_live_direct_gmv",
+    (
+        "GMV \u0e42\u0e14\u0e22\u0e2d"
+        "\u0e49\u0e2d\u0e21\u0e08\u0e32\u0e01 L"
+        "IVE \u0e02\u0e2d\u0e07\u0e04"
+        "\u0e23\u0e35\u0e40\u0e2d\u0e40\u0e15\u0e2d\u0e23"
+        "\u0e4c"
+    ): "creator_live_indirect_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01 "
+        "LIVE \u0e02\u0e2d\u0e07"
+        "\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e17\u0e35\u0e48"
+        "\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e42\u0e22"
+        "\u0e07"
+    ): "linked_account_live_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01 "
+        "LIVE \u0e02\u0e2d\u0e07"
+        "\u0e1c\u0e39\u0e49\u0e02\u0e32\u0e22"
+    ): "seller_live_direct_gmv",
+    (
+        "GMV \u0e42\u0e14\u0e22\u0e2d"
+        "\u0e49\u0e2d\u0e21\u0e08\u0e32\u0e01 L"
+        "IVE \u0e02\u0e2d\u0e07\u0e1c"
+        "\u0e39\u0e49\u0e02\u0e32\u0e22"
+    ): "seller_live_indirect_gmv",
+    (
+        "GMV \u0e17\u0e35\u0e48\u0e21"
+        "\u0e32\u0e08\u0e32\u0e01\u0e27\u0e34\u0e14\u0e35"
+        "\u0e42\u0e2d\u0e02\u0e2d\u0e07\u0e41\u0e2d\u0e1f"
+        "\u0e1f\u0e34\u0e25\u0e34\u0e40\u0e2d\u0e15"
+    ): "affiliate_video_attributed_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01\u0e27"
+        "\u0e34\u0e14\u0e35\u0e42\u0e2d\u0e02\u0e2d\u0e07"
+        "\u0e04\u0e23\u0e35\u0e40\u0e2d\u0e40\u0e15\u0e2d"
+        "\u0e23\u0e4c"
+    ): "creator_video_direct_gmv",
+    (
+        "GMV \u0e42\u0e14\u0e22\u0e2d"
+        "\u0e49\u0e2d\u0e21\u0e08\u0e32\u0e01\u0e27\u0e34"
+        "\u0e14\u0e35\u0e42\u0e2d\u0e02\u0e2d\u0e07\u0e04"
+        "\u0e23\u0e35\u0e40\u0e2d\u0e40\u0e15\u0e2d\u0e23"
+        "\u0e4c"
+    ): "creator_video_indirect_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01\u0e27"
+        "\u0e34\u0e14\u0e35\u0e42\u0e2d\u0e02\u0e2d\u0e07"
+        "\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e17\u0e35\u0e48"
+        "\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e42\u0e22"
+        "\u0e07"
+    ): "linked_account_video_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01\u0e27"
+        "\u0e34\u0e14\u0e35\u0e42\u0e2d\u0e02\u0e2d\u0e07"
+        "\u0e1c\u0e39\u0e49\u0e02\u0e32\u0e22"
+    ): "seller_video_direct_gmv",
+    (
+        "GMV \u0e42\u0e14\u0e22\u0e2d"
+        "\u0e49\u0e2d\u0e21\u0e08\u0e32\u0e01\u0e27\u0e34"
+        "\u0e14\u0e35\u0e42\u0e2d\u0e02\u0e2d\u0e07\u0e1c"
+        "\u0e39\u0e49\u0e02\u0e32\u0e22"
+    ): "seller_video_indirect_gmv",
+}
+
+
 @dataclass(frozen=True)
 class LoadContract:
     source_name: str
@@ -36,6 +160,10 @@ class LoadContract:
 
 
 LOAD_CONTRACTS: dict[str, LoadContract] = {
+    "shop_analytics": LoadContract(
+        source_name="shop_analytics",
+        column_mapping=_SHOP_ANALYTICS_COLUMN_MAPPING,
+    ),
     "campaign_overview": LoadContract(
         source_name="campaign_overview",
         column_mapping={

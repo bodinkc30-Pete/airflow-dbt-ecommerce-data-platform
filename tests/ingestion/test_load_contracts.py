@@ -51,9 +51,49 @@ def test_campaign_load_contract_destination_columns_are_unique() -> None:
     assert len(destinations) == len(set(destinations))
 
 
+def test_shop_analytics_load_contract_contains_verified_twenty_eight_columns() -> None:
+    contract = get_load_contract("shop_analytics")
+
+    assert contract.source_name == "shop_analytics"
+    assert len(contract.column_mapping) == 28
+    assert tuple(contract.column_mapping.values()) == (
+        "metric_date",
+        "gmv",
+        "orders",
+        "customers",
+        "items_sold",
+        "refunds",
+        "sku_orders",
+        "gross_revenue",
+        "page_views",
+        "visitors",
+        "conversion_rate",
+        "product_impressions",
+        "unique_product_impressions",
+        "product_clicks",
+        "unique_product_clicks",
+        "aov",
+        "creator_live_attributed_gmv",
+        "creator_live_direct_gmv",
+        "creator_live_indirect_gmv",
+        "linked_account_live_gmv",
+        "seller_live_direct_gmv",
+        "seller_live_indirect_gmv",
+        "affiliate_video_attributed_gmv",
+        "creator_video_direct_gmv",
+        "creator_video_indirect_gmv",
+        "linked_account_video_gmv",
+        "seller_video_direct_gmv",
+        "seller_video_indirect_gmv",
+    )
+
+
 def test_only_verified_load_contracts_are_registered() -> None:
-    assert set(LOAD_CONTRACTS) == {"campaign_overview"}
-    assert list_load_contract_names() == ("campaign_overview",)
+    assert set(LOAD_CONTRACTS) == {"campaign_overview", "shop_analytics"}
+    assert list_load_contract_names() == (
+        "campaign_overview",
+        "shop_analytics",
+    )
 
 
 def test_validate_load_contracts_passes() -> None:
