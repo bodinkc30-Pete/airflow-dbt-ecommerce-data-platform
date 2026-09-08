@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: influencer_identity_map
+    description: Row-preserving mapping from staged influencer observations to provisional entities.
+    columns:
+      - name: influencer_row_id
+        data_tests: [not_null, unique]
+      - name: normalized_influencer_name
+        data_tests: [not_null]
+      - name: influencer_entity_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('influencer_entities')
+                field: influencer_entity_key
+      - name: identity_method
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [normalized_name_v1]
+      - name: identity_confidence
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [provisional]
+
+  - name: influencer_entities
+    description: One provisional canonical entity per conservative normalized influencer name.
+    columns:
+      - name: influencer_entity_key
+        data_tests: [not_null, unique]
+      - name: normalized_influencer_name
+        data_tests: [not_null, unique]
+      - name: canonical_influencer_name
+        data_tests: [not_null]
+      - name: source_row_count
+        data_tests: [not_null]
+      - name: source_file_count
+        data_tests: [not_null]
+      - name: duplicate_snapshot_count
+        data_tests: [not_null]
+      - name: conflicting_snapshot_count
+        data_tests: [not_null]
+      - name: requires_manual_review
+        data_tests: [not_null]
+
+  - name: influencer_identity_review_queue
+    description: Entity candidates requiring manual review because identity evidence conflicts.
+    columns:
+      - name: influencer_entity_key
+        data_tests: [not_null, unique]
+      - name: normalized_influencer_name
+        data_tests: [not_null]

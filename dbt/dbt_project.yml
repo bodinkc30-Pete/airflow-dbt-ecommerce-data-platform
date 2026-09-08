@@ -17,3 +17,6 @@ models:
     staging:
       +materialized: view
       +schema: staging
+    identity:
+      +materialized: view
+      +schema: identity
