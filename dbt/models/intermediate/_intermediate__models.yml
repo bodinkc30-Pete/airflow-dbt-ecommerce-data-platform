@@ -1,0 +1,131 @@
+version: 2
+
+models:
+  - name: int_products_current
+    description: Latest observed Product Master row per product_id.
+    columns:
+      - name: product_id
+        data_tests: [not_null, unique]
+      - name: snapshot_observation_count
+        data_tests: [not_null]
+      - name: source_file_count
+        data_tests: [not_null]
+
+  - name: int_skus_current
+    description: Latest observed SKU Master row per sku_id.
+    columns:
+      - name: sku_id
+        data_tests: [not_null, unique]
+      - name: product_id
+        data_tests: [not_null]
+      - name: snapshot_observation_count
+        data_tests: [not_null]
+      - name: source_file_count
+        data_tests: [not_null]
+
+  - name: int_product_sku_catalog
+    description: Current SKU catalog enriched with current Product Master attributes.
+    columns:
+      - name: sku_id
+        data_tests: [not_null, unique]
+      - name: product_id
+        data_tests: [not_null]
+      - name: product_match_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched_product, unmatched_product]
+
+  - name: int_order_items_current
+    description: Latest observed row per order_id and sku_id business key.
+    columns:
+      - name: order_item_key
+        data_tests: [not_null, unique]
+      - name: order_id
+        data_tests: [not_null]
+      - name: sku_id
+        data_tests: [not_null]
+      - name: source_observation_count
+        data_tests: [not_null]
+      - name: source_file_count
+        data_tests: [not_null]
+
+  - name: int_creator_identity_bridge
+    description: Distinct creator handles from current orders mapped conservatively to influencer entities.
+    columns:
+      - name: normalized_creator_handle
+        data_tests: [not_null, unique]
+      - name: order_item_count
+        data_tests: [not_null]
+      - name: creator_identity_match_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched_influencer_entity, unmatched_influencer_entity]
+
+  - name: int_order_items_enriched
+    description: Current order-SKU rows enriched with catalog and provisional influencer identity signals.
+    columns:
+      - name: order_item_key
+        data_tests: [not_null, unique]
+      - name: sku_match_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched_sku, unmatched_sku]
+      - name: product_match_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched_product, unmatched_product, not_evaluated]
+      - name: creator_identity_match_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [no_creator, matched_influencer_entity, unmatched_influencer_entity]
+
+  - name: int_shop_daily_current
+    description: Latest valid Shop Analytics observation per metric_date.
+    columns:
+      - name: metric_date
+        data_tests: [not_null, unique]
+      - name: source_observation_count
+        data_tests: [not_null]
+
+  - name: int_campaign_daily_current
+    description: Latest valid Campaign observation per metric_date.
+    columns:
+      - name: metric_date
+        data_tests: [not_null, unique]
+      - name: source_observation_count
+        data_tests: [not_null]
+
+  - name: int_live_daily_current
+    description: Latest valid LIVE observation per metric_date.
+    columns:
+      - name: metric_date
+        data_tests: [not_null, unique]
+      - name: source_observation_count
+        data_tests: [not_null]
+
+  - name: int_product_card_daily_current
+    description: Latest valid Product Card observation per metric_date.
+    columns:
+      - name: metric_date
+        data_tests: [not_null, unique]
+      - name: source_observation_count
+        data_tests: [not_null]
+
+  - name: int_daily_performance
+    description: One row per observed date with cross-domain shop, campaign, LIVE, and Product Card metrics.
+    columns:
+      - name: metric_date
+        data_tests: [not_null, unique]
+      - name: has_shop_metrics
+        data_tests: [not_null]
+      - name: has_campaign_metrics
+        data_tests: [not_null]
+      - name: has_live_metrics
+        data_tests: [not_null]
+      - name: has_product_card_metrics
+        data_tests: [not_null]

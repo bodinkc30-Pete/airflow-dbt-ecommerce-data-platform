@@ -20,3 +20,6 @@ models:
     identity:
       +materialized: view
       +schema: identity
+    intermediate:
+      +materialized: view
+      +schema: intermediate
