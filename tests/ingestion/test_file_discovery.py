@@ -122,6 +122,27 @@ def test_multiple_file_source_returns_all_matches_in_sorted_order(
     ]
 
 
+def test_shop_analytics_returns_multiple_matching_files(
+    tmp_path: Path,
+) -> None:
+    first_file = tmp_path / "Shop-Analytics_Key-metrics_20260714-1.xlsx"
+    second_file = tmp_path / "Shop-Analytics_Key-metrics_20260714.xlsx"
+
+    first_file.write_bytes(b"first")
+    second_file.write_bytes(b"second")
+
+    discovered = discover_source_files(
+        source_name="shop_analytics",
+        input_directory=tmp_path,
+    )
+
+    assert len(discovered) == 2
+    assert [item.file_name for item in discovered] == [
+        first_file.name,
+        second_file.name,
+    ]
+
+
 def test_single_file_source_rejects_multiple_matches(
     tmp_path: Path,
 ) -> None:
