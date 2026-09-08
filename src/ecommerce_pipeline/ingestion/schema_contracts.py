@@ -135,6 +135,7 @@ SCHEMA_CONTRACTS: dict[str, SchemaContract] = {
                 accepted_source_names=(
                     "Product ID",
                     "product_id",
+                    "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32",
                 ),
             ),
         ),

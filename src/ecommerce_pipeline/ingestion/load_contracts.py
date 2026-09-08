@@ -273,6 +273,17 @@ _PRODUCT_CARD_TRAFFIC_COLUMN_MAPPING = {
 }
 
 
+_PRODUCT_MASTER_COLUMN_MAPPING = {
+    "\u0E0A\u0E37\u0E48\u0E2D": "product_name",
+    "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32": "product_id",
+    "\u0E0A\u0E48\u0E27\u0E07 GMV": "gmv_tier",
+    (
+        "\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E23\u0E32\u0E22"
+        "\u0E01\u0E32\u0E23\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32"
+    ): "product_status",
+}
+
+
 _SHOP_ANALYTICS_COLUMN_MAPPING = {
     "\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48": "metric_date",
     "GMV": "gmv",
@@ -415,6 +426,10 @@ LOAD_CONTRACTS: dict[str, LoadContract] = {
     "product_card_traffic": LoadContract(
         source_name="product_card_traffic",
         column_mapping=_PRODUCT_CARD_TRAFFIC_COLUMN_MAPPING,
+    ),
+    "product_master": LoadContract(
+        source_name="product_master",
+        column_mapping=_PRODUCT_MASTER_COLUMN_MAPPING,
     ),
     "shop_analytics": LoadContract(
         source_name="shop_analytics",

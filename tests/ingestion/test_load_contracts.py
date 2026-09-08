@@ -465,6 +465,7 @@ def test_only_verified_load_contracts_are_registered() -> None:
         "live_performance",
         "orders",
         "product_card_traffic",
+        "product_master",
         "shop_analytics",
     }
     assert list_load_contract_names() == (
@@ -472,9 +473,28 @@ def test_only_verified_load_contracts_are_registered() -> None:
         "live_performance",
         "orders",
         "product_card_traffic",
+        "product_master",
         "shop_analytics",
     )
 
 
 def test_validate_load_contracts_passes() -> None:
     validate_load_contracts()
+
+
+
+def test_product_master_load_contract_contains_verified_identity_mapping() -> None:
+    contract = get_load_contract("product_master")
+
+    expected_mapping = {
+        "\u0E0A\u0E37\u0E48\u0E2D": "product_name",
+        "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32": "product_id",
+        "\u0E0A\u0E48\u0E27\u0E07 GMV": "gmv_tier",
+        (
+            "\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E23\u0E32\u0E22"
+            "\u0E01\u0E32\u0E23\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32"
+        ): "product_status",
+    }
+
+    assert contract.source_name == "product_master"
+    assert contract.column_mapping == expected_mapping

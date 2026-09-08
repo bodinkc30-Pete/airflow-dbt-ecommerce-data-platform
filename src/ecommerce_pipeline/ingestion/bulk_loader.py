@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 import pandas as pd
 from psycopg2 import sql
 from psycopg2.extensions import connection as PgConnection
-from psycopg2.extras import execute_values
+from psycopg2.extras import Json, execute_values
 
 from ecommerce_pipeline.ingestion.source_registry import get_source_config
 
@@ -141,6 +141,60 @@ def prepare_raw_dataframe(
     return prepared
 
 
+def prepare_product_master_dataframe(
+    dataframe: pd.DataFrame,
+    *,
+    column_mapping: Mapping[str, str],
+    lineage: LineageMetadata,
+    source_row_start: int = 1,
+) -> pd.DataFrame:
+    explicit_columns = (
+        "product_id",
+        "product_name",
+        "gmv_tier",
+        "product_status",
+    )
+    destination_columns = tuple(column_mapping.values())
+
+    if set(destination_columns) != set(explicit_columns):
+        raise ValueError(
+            "Product Master mapping must define exactly: "
+            + ", ".join(explicit_columns)
+        )
+
+    prepared = prepare_raw_dataframe(
+        dataframe=dataframe,
+        column_mapping=column_mapping,
+        lineage=lineage,
+        source_row_start=source_row_start,
+    )
+
+    lineage_columns = (
+        "_source_file",
+        "_source_row_number",
+        "_batch_id",
+        "_file_hash",
+        "_ingested_at",
+        "_pipeline_run_id",
+        "_ingestion_file_id",
+    )
+    prepared = prepared.loc[:, [*explicit_columns, *lineage_columns]]
+
+    normalized_source = _normalize_dataframe_nulls(dataframe)
+    payloads = [
+        Json(
+            {
+                str(column): (None if value is None else str(value))
+                for column, value in row.items()
+            }
+        )
+        for row in normalized_source.to_dict(orient="records")
+    ]
+    prepared.insert(len(explicit_columns), "source_payload", payloads)
+
+    return prepared
+
+
 def _dataframe_rows(
     dataframe: pd.DataFrame,
     columns: Sequence[str],
@@ -222,12 +276,20 @@ def bulk_load_source(
 ) -> BulkLoadResult:
     source_config = get_source_config(source_name)
 
-    prepared = prepare_raw_dataframe(
-        dataframe=dataframe,
-        column_mapping=column_mapping,
-        lineage=lineage,
-        source_row_start=source_row_start,
-    )
+    if source_name == "product_master":
+        prepared = prepare_product_master_dataframe(
+            dataframe=dataframe,
+            column_mapping=column_mapping,
+            lineage=lineage,
+            source_row_start=source_row_start,
+        )
+    else:
+        prepared = prepare_raw_dataframe(
+            dataframe=dataframe,
+            column_mapping=column_mapping,
+            lineage=lineage,
+            source_row_start=source_row_start,
+        )
 
     rows_loaded = bulk_insert_dataframe(
         connection=connection,

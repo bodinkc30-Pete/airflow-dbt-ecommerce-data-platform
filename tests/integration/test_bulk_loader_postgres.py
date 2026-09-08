@@ -624,3 +624,94 @@ def test_product_card_verified_load_contract_maps_all_business_columns(
         ingestion_run_id,
         registered_file.ingestion_file_id,
     )
+
+
+
+def test_product_master_verified_load_contract_preserves_full_payload(
+    postgres_connection,
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "product_master_verified_contract_integration.xlsx"
+    source_file.write_bytes(b"synthetic-product-master-contract")
+
+    metadata = build_file_metadata(
+        source_name="product_master",
+        file_path=source_file,
+    )
+    ingestion_run_id = create_test_ingestion_run(postgres_connection)
+    registered_file = register_file(
+        connection=postgres_connection,
+        ingestion_run_id=ingestion_run_id,
+        metadata=metadata,
+    )
+    contract = get_load_contract("product_master")
+    source_columns = list(contract.column_mapping)
+    source_columns.extend(
+        f"synthetic_group::metric_{index:03d}"
+        for index in range(5, 177)
+    )
+    row = {
+        source_column: f"value_{index:03d}"
+        for index, source_column in enumerate(source_columns, start=1)
+    }
+    row["\u0E0A\u0E37\u0E48\u0E2D"] = "Synthetic Product"
+    row["\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32"] = "PROD_SYN_INT_001"
+    dataframe = pd.DataFrame([row], columns=source_columns)
+    lineage = LineageMetadata(
+        source_file=source_file.name,
+        batch_id="batch_product_master_contract_integration",
+        file_hash=metadata.file_hash_sha256,
+        pipeline_run_id=ingestion_run_id,
+        ingestion_file_id=registered_file.ingestion_file_id,
+        ingested_at=datetime(2026, 9, 8, tzinfo=UTC),
+    )
+
+    result = bulk_load_source(
+        connection=postgres_connection,
+        source_name="product_master",
+        dataframe=dataframe,
+        column_mapping=contract.column_mapping,
+        lineage=lineage,
+    )
+
+    assert result.source_name == "product_master"
+    assert result.target_table == "raw.products"
+    assert result.rows_attempted == 1
+    assert result.rows_loaded == 1
+
+    with postgres_connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT
+                product_id,
+                product_name,
+                gmv_tier,
+                product_status,
+                (SELECT COUNT(*) FROM jsonb_object_keys(source_payload)),
+                source_payload ->> %s,
+                header_schema_version,
+                _source_row_number,
+                _pipeline_run_id,
+                _ingestion_file_id
+            FROM raw.products
+            WHERE _ingestion_file_id = %s;
+            """,
+            (
+                "synthetic_group::metric_176",
+                registered_file.ingestion_file_id,
+            ),
+        )
+        loaded = cursor.fetchone()
+
+    assert loaded == (
+        "PROD_SYN_INT_001",
+        "Synthetic Product",
+        row["\u0E0A\u0E48\u0E27\u0E07 GMV"],
+        row["\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32"],
+        176,
+        "value_176",
+        "product_master_header_v1",
+        1,
+        ingestion_run_id,
+        registered_file.ingestion_file_id,
+    )

@@ -213,3 +213,15 @@ def test_list_schema_contract_names_is_sorted_and_deterministic() -> None:
 
 def test_validate_schema_contracts_passes() -> None:
     validate_schema_contracts()
+
+
+def test_product_master_includes_verified_thai_product_id_alias() -> None:
+    contract = get_schema_contract("product_master")
+    required = contract.required_columns[0]
+
+    assert required.canonical_name == "product_id"
+    thai_product_id = (
+        "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34"
+        "\u0E19\u0E04\u0E49\u0E32"
+    )
+    assert thai_product_id in required.accepted_source_names

@@ -462,3 +462,19 @@ def test_result_preserves_normalized_columns() -> None:
 
     assert result.normalized_columns[0] == "order id"
     assert result.normalized_columns[1] == "sku id"
+
+
+
+def test_product_master_accepts_verified_thai_product_id_alias() -> None:
+    columns = _make_columns(
+        176,
+        required=("\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32",),
+    )
+
+    result = validate_schema(
+        source_name="product_master",
+        observed_columns=columns,
+    )
+
+    assert result.status == "VALID"
+    assert result.missing_required_columns == ()

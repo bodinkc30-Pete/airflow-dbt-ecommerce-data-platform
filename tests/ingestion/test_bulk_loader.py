@@ -6,6 +6,7 @@ import pytest
 from ecommerce_pipeline.ingestion.bulk_loader import (
     LineageMetadata,
     _split_target_table,
+    prepare_product_master_dataframe,
     prepare_raw_dataframe,
 )
 
@@ -324,3 +325,54 @@ def test_prepare_raw_dataframe_does_not_mutate_input_dataframe() -> None:
         dataframe,
         original,
     )
+
+
+
+def test_prepare_product_master_dataframe_preserves_full_payload() -> None:
+    product_status_header = (
+        "\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E23\u0E32\u0E22"
+        "\u0E01\u0E32\u0E23\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32"
+    )
+    dataframe = pd.DataFrame(
+        {
+            "\u0E0A\u0E37\u0E48\u0E2D": ["Synthetic product"],
+            "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32": ["PROD_SYN_001"],
+            "\u0E0A\u0E48\u0E27\u0E07 GMV": ["A"],
+            product_status_header: ["active"],
+            "all::GMV": [123.4],
+            "all::Orders": [None],
+        }
+    )
+    mapping = {
+        "\u0E0A\u0E37\u0E48\u0E2D": "product_name",
+        "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32": "product_id",
+        "\u0E0A\u0E48\u0E27\u0E07 GMV": "gmv_tier",
+        product_status_header: "product_status",
+    }
+
+    prepared = prepare_product_master_dataframe(
+        dataframe=dataframe,
+        column_mapping=mapping,
+        lineage=_lineage(),
+    )
+
+    assert list(prepared.columns) == [
+        "product_id",
+        "product_name",
+        "gmv_tier",
+        "product_status",
+        "source_payload",
+        "_source_file",
+        "_source_row_number",
+        "_batch_id",
+        "_file_hash",
+        "_ingested_at",
+        "_pipeline_run_id",
+        "_ingestion_file_id",
+    ]
+    payload = prepared.loc[0, "source_payload"].adapted
+    assert payload["all::GMV"] == "123.4"
+    assert payload["all::Orders"] is None
+    assert len(payload) == 6
+    assert prepared.loc[0, "product_id"] == "PROD_SYN_001"
+    assert prepared.loc[0, "product_name"] == "Synthetic product"
