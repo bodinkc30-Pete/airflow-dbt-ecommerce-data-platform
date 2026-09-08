@@ -284,6 +284,20 @@ _PRODUCT_MASTER_COLUMN_MAPPING = {
 }
 
 
+_SKU_MASTER_COLUMN_MAPPING = {
+    "SKU ID": "sku_id",
+    "Product ID": "product_id",
+    "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32": "sku_name",
+    "\u0E2A\u0E16\u0E32\u0E19\u0E30": "sku_status",
+    "GMV": "gmv",
+    "\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07\u0E0B\u0E37\u0E49\u0E2D SKU": "sku_orders",
+    (
+        "\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E17\u0E35\u0E48"
+        "\u0E02\u0E32\u0E22\u0E44\u0E14\u0E49"
+    ): "items_sold",
+}
+
+
 _SHOP_ANALYTICS_COLUMN_MAPPING = {
     "\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48": "metric_date",
     "GMV": "gmv",
@@ -434,6 +448,10 @@ LOAD_CONTRACTS: dict[str, LoadContract] = {
     "shop_analytics": LoadContract(
         source_name="shop_analytics",
         column_mapping=_SHOP_ANALYTICS_COLUMN_MAPPING,
+    ),
+    "sku_master": LoadContract(
+        source_name="sku_master",
+        column_mapping=_SKU_MASTER_COLUMN_MAPPING,
     ),
     "campaign_overview": LoadContract(
         source_name="campaign_overview",

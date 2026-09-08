@@ -467,6 +467,7 @@ def test_only_verified_load_contracts_are_registered() -> None:
         "product_card_traffic",
         "product_master",
         "shop_analytics",
+        "sku_master",
     }
     assert list_load_contract_names() == (
         "campaign_overview",
@@ -475,6 +476,7 @@ def test_only_verified_load_contracts_are_registered() -> None:
         "product_card_traffic",
         "product_master",
         "shop_analytics",
+        "sku_master",
     )
 
 
@@ -497,4 +499,25 @@ def test_product_master_load_contract_contains_verified_identity_mapping() -> No
     }
 
     assert contract.source_name == "product_master"
+    assert contract.column_mapping == expected_mapping
+
+
+
+def test_sku_master_load_contract_contains_verified_seven_columns() -> None:
+    contract = get_load_contract("sku_master")
+
+    expected_mapping = {
+        "SKU ID": "sku_id",
+        "Product ID": "product_id",
+        "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32": "sku_name",
+        "\u0E2A\u0E16\u0E32\u0E19\u0E30": "sku_status",
+        "GMV": "gmv",
+        "\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07\u0E0B\u0E37\u0E49\u0E2D SKU": "sku_orders",
+        (
+            "\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E17\u0E35\u0E48"
+            "\u0E02\u0E32\u0E22\u0E44\u0E14\u0E49"
+        ): "items_sold",
+    }
+
+    assert contract.source_name == "sku_master"
     assert contract.column_mapping == expected_mapping
