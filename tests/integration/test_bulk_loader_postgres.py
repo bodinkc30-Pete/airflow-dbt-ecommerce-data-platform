@@ -184,6 +184,80 @@ def test_bulk_load_orders_into_postgres(
     )
 
 
+def test_orders_verified_load_contract_maps_all_business_columns(
+    postgres_connection,
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "orders_verified_contract_integration.csv"
+    source_file.write_bytes(b"synthetic-orders-contract")
+
+    metadata = build_file_metadata(
+        source_name="orders",
+        file_path=source_file,
+    )
+    ingestion_run_id = create_test_ingestion_run(
+        postgres_connection
+    )
+    registered_file = register_file(
+        connection=postgres_connection,
+        ingestion_run_id=ingestion_run_id,
+        metadata=metadata,
+    )
+    contract = get_load_contract("orders")
+    source_columns = tuple(contract.column_mapping)
+    row = {
+        source_column: f"value_{index:02d}"
+        for index, source_column in enumerate(source_columns, start=1)
+    }
+    row["Order ID"] = "ORDER_CONTRACT_INT_001"
+    row["SKU ID"] = "SKU_CONTRACT_INT_001"
+    dataframe = pd.DataFrame([row], columns=source_columns)
+    lineage = LineageMetadata(
+        source_file=source_file.name,
+        batch_id="batch_orders_contract_integration",
+        file_hash=metadata.file_hash_sha256,
+        pipeline_run_id=ingestion_run_id,
+        ingestion_file_id=registered_file.ingestion_file_id,
+        ingested_at=datetime(2026, 9, 8, tzinfo=UTC),
+    )
+
+    result = bulk_load_source(
+        connection=postgres_connection,
+        source_name="orders",
+        dataframe=dataframe,
+        column_mapping=contract.column_mapping,
+        lineage=lineage,
+    )
+
+    assert result.rows_attempted == 1
+    assert result.rows_loaded == 1
+    target_columns = tuple(contract.column_mapping.values())
+    query = f"""
+        SELECT {", ".join(target_columns)},
+               _source_row_number, _pipeline_run_id, _ingestion_file_id
+        FROM raw.orders
+        WHERE _ingestion_file_id = %s;
+    """
+    with postgres_connection.cursor() as cursor:
+        cursor.execute(
+            query,
+            (registered_file.ingestion_file_id,),
+        )
+        loaded = cursor.fetchone()
+
+    expected_business_values = tuple(
+        row[column]
+        for column in source_columns
+    )
+    assert loaded == (
+        *expected_business_values,
+        1,
+        ingestion_run_id,
+        registered_file.ingestion_file_id,
+    )
+
+
+
 def test_bulk_load_campaign_overview_into_postgres(
     postgres_connection,
     tmp_path: Path,
