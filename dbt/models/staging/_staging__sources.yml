@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw ingestion tables owned by the Project 06 ingestion layer.
+    database: "{{ env_var('DBT_POSTGRES_DB', 'ecommerce') }}"
+    schema: raw
+    tables:
+      - name: orders
+        description: TikTok Seller order-SKU source lines.
+        columns:
+          - name: raw_order_row_id
+            data_tests: [not_null, unique]
+      - name: shop_daily
+        description: Shop Analytics daily metrics.
+        columns:
+          - name: raw_shop_daily_row_id
+            data_tests: [not_null, unique]
+      - name: campaign_daily
+        description: Shop-level campaign performance by day.
+        columns:
+          - name: raw_campaign_daily_row_id
+            data_tests: [not_null, unique]
+      - name: live_daily
+        description: LIVE performance daily metrics.
+        columns:
+          - name: raw_live_daily_row_id
+            data_tests: [not_null, unique]
+      - name: product_card_daily
+        description: Product Card traffic daily metrics.
+        columns:
+          - name: raw_product_card_daily_row_id
+            data_tests: [not_null, unique]
+      - name: products
+        description: Product Master snapshot rows with canonical JSON payload.
+        columns:
+          - name: raw_product_row_id
+            data_tests: [not_null, unique]
+      - name: skus
+        description: SKU Master snapshot rows.
+        columns:
+          - name: raw_sku_row_id
+            data_tests: [not_null, unique]
+      - name: influencer_roster
+        description: Influencer roster snapshot rows.
+        columns:
+          - name: raw_influencer_row_id
+            data_tests: [not_null, unique]

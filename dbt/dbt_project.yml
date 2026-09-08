@@ -1,0 +1,19 @@
+name: project06_ecommerce
+version: "1.0.0"
+config-version: 2
+
+profile: project06_ecommerce
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  project06_ecommerce:
+    staging:
+      +materialized: view
+      +schema: staging

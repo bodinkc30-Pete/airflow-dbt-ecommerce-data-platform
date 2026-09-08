@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: Analytics-safe normalized order-SKU source rows with PII excluded.
+    columns:
+      - name: order_row_id
+        data_tests: [not_null, unique]
+      - name: order_id
+        data_tests: [not_null]
+      - name: sku_id
+        data_tests: [not_null]
+
+  - name: stg_products
+    description: Normalized Product Master snapshot rows.
+    columns:
+      - name: product_row_id
+        data_tests: [not_null, unique]
+      - name: product_id
+        data_tests: [not_null]
+      - name: product_name
+        data_tests: [not_null]
+
+  - name: stg_skus
+    description: Normalized SKU Master snapshot rows.
+    columns:
+      - name: sku_row_id
+        data_tests: [not_null, unique]
+      - name: sku_id
+        data_tests: [not_null]
+      - name: product_id
+        data_tests: [not_null]
+
+  - name: stg_shop_analytics
+    description: Typed Shop Analytics daily metrics.
+    columns:
+      - name: shop_daily_row_id
+        data_tests: [not_null, unique]
+
+  - name: stg_campaign
+    description: Typed shop-level advertising performance by day.
+    columns:
+      - name: campaign_daily_row_id
+        data_tests: [not_null, unique]
+
+  - name: stg_live
+    description: Typed LIVE performance daily metrics.
+    columns:
+      - name: live_daily_row_id
+        data_tests: [not_null, unique]
+
+  - name: stg_product_card
+    description: Typed Product Card traffic daily metrics.
+    columns:
+      - name: product_card_daily_row_id
+        data_tests: [not_null, unique]
+
+  - name: stg_influencer
+    description: Typed influencer roster rows without entity resolution.
+    columns:
+      - name: influencer_row_id
+        data_tests: [not_null, unique]
+      - name: influencer_name
+        data_tests: [not_null]

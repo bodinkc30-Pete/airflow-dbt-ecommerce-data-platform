@@ -1,0 +1,42 @@
+with source as (
+    select * from {{ source('raw', 'shop_daily') }}
+)
+
+select
+    raw_shop_daily_row_id as shop_daily_row_id,
+    {{ safe_date('metric_date') }} as metric_date,
+    {{ safe_numeric('gmv') }} as gmv,
+    {{ safe_bigint('orders') }} as orders,
+    {{ safe_bigint('customers') }} as customers,
+    {{ safe_bigint('items_sold') }} as items_sold,
+    {{ safe_numeric('refunds') }} as refunds,
+    {{ safe_bigint('sku_orders') }} as sku_orders,
+    {{ safe_numeric('gross_revenue') }} as gross_revenue,
+    {{ safe_bigint('page_views') }} as page_views,
+    {{ safe_bigint('visitors') }} as visitors,
+    {{ safe_percent('conversion_rate') }} as conversion_rate,
+    {{ safe_bigint('product_impressions') }} as product_impressions,
+    {{ safe_bigint('unique_product_impressions') }} as unique_product_impressions,
+    {{ safe_bigint('product_clicks') }} as product_clicks,
+    {{ safe_bigint('unique_product_clicks') }} as unique_product_clicks,
+    {{ safe_numeric('aov') }} as average_order_value,
+    {{ safe_numeric('creator_live_attributed_gmv') }} as creator_live_attributed_gmv,
+    {{ safe_numeric('creator_live_direct_gmv') }} as creator_live_direct_gmv,
+    {{ safe_numeric('creator_live_indirect_gmv') }} as creator_live_indirect_gmv,
+    {{ safe_numeric('linked_account_live_gmv') }} as linked_account_live_gmv,
+    {{ safe_numeric('seller_live_direct_gmv') }} as seller_live_direct_gmv,
+    {{ safe_numeric('seller_live_indirect_gmv') }} as seller_live_indirect_gmv,
+    {{ safe_numeric('affiliate_video_attributed_gmv') }} as affiliate_video_attributed_gmv,
+    {{ safe_numeric('creator_video_direct_gmv') }} as creator_video_direct_gmv,
+    {{ safe_numeric('creator_video_indirect_gmv') }} as creator_video_indirect_gmv,
+    {{ safe_numeric('linked_account_video_gmv') }} as linked_account_video_gmv,
+    {{ safe_numeric('seller_video_direct_gmv') }} as seller_video_direct_gmv,
+    {{ safe_numeric('seller_video_indirect_gmv') }} as seller_video_indirect_gmv,
+    _source_file as source_file,
+    _source_row_number as source_row_number,
+    _batch_id as batch_id,
+    _file_hash as file_hash,
+    _ingested_at as ingested_at,
+    _pipeline_run_id as pipeline_run_id,
+    _ingestion_file_id as ingestion_file_id
+from source
