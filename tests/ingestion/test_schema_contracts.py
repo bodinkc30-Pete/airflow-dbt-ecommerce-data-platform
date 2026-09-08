@@ -126,6 +126,15 @@ def test_live_performance_requires_metric_date() -> None:
     assert required_names == {"metric_date"}
 
 
+def test_live_performance_includes_verified_thai_time_header_alias() -> None:
+    contract = get_schema_contract("live_performance")
+    required = contract.required_columns[0]
+
+    assert required.canonical_name == "metric_date"
+    assert "\u0E40\u0E27\u0E25\u0E32" in required.accepted_source_names
+
+
+
 def test_product_card_traffic_requires_metric_date() -> None:
     contract = get_schema_contract("product_card_traffic")
 

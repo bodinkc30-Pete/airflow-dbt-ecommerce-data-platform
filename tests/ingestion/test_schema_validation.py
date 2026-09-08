@@ -349,6 +349,22 @@ def test_live_performance_accepts_metric_date_alias() -> None:
     assert result.status == "VALID"
 
 
+def test_live_performance_accepts_verified_thai_time_header_alias() -> None:
+    columns = _make_columns(
+        18,
+        required=("\u0E40\u0E27\u0E25\u0E32",),
+    )
+
+    result = validate_schema(
+        source_name="live_performance",
+        observed_columns=columns,
+    )
+
+    assert result.status == "VALID"
+    assert result.missing_required_columns == ()
+
+
+
 def test_product_card_traffic_accepts_date_alias() -> None:
     columns = _make_columns(
         16,

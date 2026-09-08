@@ -98,6 +98,99 @@ _ORDERS_COLUMN_MAPPING = {
 }
 
 
+_LIVE_PERFORMANCE_COLUMN_MAPPING = {
+    "\u0e40\u0e27\u0e25\u0e32": "metric_date",
+    (
+        "GMV \u0e17\u0e35\u0e48\u0e21"
+        "\u0e32\u0e08\u0e32\u0e01 LIV"
+        "E (\u0e3f)"
+    ): "live_attributed_gmv",
+    (
+        "GMV \u0e08\u0e32\u0e01 "
+        "LIVE (\u0e3f)"
+    ): "live_direct_gmv",
+    (
+        "GMV \u0e42\u0e14\u0e22\u0e2d"
+        "\u0e49\u0e2d\u0e21\u0e08\u0e32\u0e01 L"
+        "IVE (\u0e3f)"
+    ): "live_indirect_gmv",
+    (
+        "\u0e41\u0e2a\u0e14\u0e07 GPM"
+        " (\u0e3f)"
+    ): "display_gpm",
+    (
+        "\u0e44\u0e25\u0e1f\u0e4c\u0e2a\u0e15\u0e23\u0e35"
+        "\u0e21"
+    ): "live_stream_count",
+    (
+        "\u0e08\u0e33\u0e19\u0e27\u0e19\u0e44\u0e25\u0e1f"
+        "\u0e4c\u0e2a\u0e15\u0e23\u0e35\u0e21\u0e17\u0e35"
+        "\u0e48\u0e2a\u0e23\u0e49\u0e32\u0e07 G"
+        "MV \u0e44\u0e14\u0e49"
+    ): "gmv_generating_live_stream_count",
+    (
+        "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e17\u0e35"
+        "\u0e48\u0e02\u0e32\u0e22\u0e44\u0e14\u0e49\u0e17"
+        "\u0e35\u0e48\u0e19\u0e31\u0e1a\u0e22\u0e2d\u0e14"
+        "\u0e43\u0e2b\u0e49 LIVE"
+    ): "live_attributed_items_sold",
+    (
+        "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e17\u0e35"
+        "\u0e48\u0e02\u0e32\u0e22\u0e44\u0e14\u0e49\u0e08"
+        "\u0e32\u0e01 LIVE"
+    ): "live_direct_items_sold",
+    (
+        "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e17\u0e35"
+        "\u0e48\u0e02\u0e32\u0e22\u0e44\u0e14\u0e49\u0e42"
+        "\u0e14\u0e22\u0e2d\u0e49\u0e2d\u0e21\u0e08\u0e32"
+        "\u0e01 LIVE"
+    ): "live_indirect_items_sold",
+    (
+        "\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37"
+        "\u0e49\u0e2d SKU \u0e08"
+        "\u0e32\u0e01\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e17"
+        "\u0e35\u0e48\u0e21\u0e32"
+    ): "attributed_sku_orders",
+    (
+        "\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37"
+        "\u0e49\u0e2d SKU \u0e08"
+        "\u0e32\u0e01 LIVE"
+    ): "live_direct_sku_orders",
+    (
+        "\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37"
+        "\u0e49\u0e2d SKU \u0e42"
+        "\u0e14\u0e22\u0e2d\u0e49\u0e2d\u0e21\u0e08\u0e32"
+        "\u0e01 LIVE"
+    ): "live_indirect_sku_orders",
+    (
+        "\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32 ("
+        "\u0e01\u0e32\u0e23\u0e04\u0e49\u0e19\u0e2b\u0e32"
+        ")"
+    ): "customers_search",
+    (
+        "\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e01\u0e32\u0e23"
+        "\u0e04\u0e25\u0e34\u0e01\u0e1c\u0e48\u0e32\u0e19"
+        " (LIVE)"
+    ): "live_click_through_rate",
+    (
+        "CTOR (\u0e04\u0e33"
+        "\u0e2a\u0e31\u0e48\u0e07\u0e0b\u0e37\u0e49\u0e2d"
+        " SKU) (L"
+        "IVE)"
+    ): "live_sku_order_ctor",
+    (
+        "\u0e22\u0e2d\u0e14\u0e01\u0e32\u0e23\u0e14\u0e39"
+        "\u0e44\u0e25\u0e1f\u0e4c"
+    ): "live_views",
+    (
+        "\u0e23\u0e30\u0e22\u0e30\u0e40\u0e27\u0e25\u0e32"
+        "\u0e01\u0e32\u0e23\u0e14\u0e39\u0e42\u0e14\u0e22"
+        "\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22 ("
+        "\u0e44\u0e25\u0e1f\u0e4c\u0e2a\u0e15\u0e23\u0e35"
+        "\u0e21)"
+    ): "average_live_watch_duration",
+}
+
 _SHOP_ANALYTICS_COLUMN_MAPPING = {
     "\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48": "metric_date",
     "GMV": "gmv",
@@ -232,6 +325,10 @@ LOAD_CONTRACTS: dict[str, LoadContract] = {
     "orders": LoadContract(
         source_name="orders",
         column_mapping=_ORDERS_COLUMN_MAPPING,
+    ),
+    "live_performance": LoadContract(
+        source_name="live_performance",
+        column_mapping=_LIVE_PERFORMANCE_COLUMN_MAPPING,
     ),
     "shop_analytics": LoadContract(
         source_name="shop_analytics",
