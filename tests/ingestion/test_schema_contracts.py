@@ -17,11 +17,12 @@ EXPECTED_COLUMN_COUNTS = {
     "product_card_traffic": 16,
     "product_master": 176,
     "sku_master": 7,
+    "influencer_roster": 12,
 }
 
 
-def test_schema_contract_registry_contains_exactly_seven_sources() -> None:
-    assert len(SCHEMA_CONTRACTS) == 7
+def test_schema_contract_registry_contains_exactly_eight_sources() -> None:
+    assert len(SCHEMA_CONTRACTS) == 8
 
 
 def test_schema_contract_names_match_source_registry() -> None:
@@ -225,3 +226,12 @@ def test_product_master_includes_verified_thai_product_id_alias() -> None:
         "\u0E19\u0E04\u0E49\u0E32"
     )
     assert thai_product_id in required.accepted_source_names
+
+
+def test_influencer_roster_requires_influencer_name() -> None:
+    contract = get_schema_contract("influencer_roster")
+    required_names = {
+        column.canonical_name
+        for column in contract.required_columns
+    }
+    assert required_names == {"influencer_name"}

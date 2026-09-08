@@ -784,3 +784,62 @@ def test_sku_master_verified_load_contract_maps_all_business_columns(
         ingestion_run_id,
         registered_file.ingestion_file_id,
     )
+
+
+def test_influencer_roster_verified_contract_preserves_payload(
+    postgres_connection,
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "influencer_roster_contract.csv"
+    source_file.write_bytes(b"synthetic-influencer-roster-contract")
+    metadata = build_file_metadata(
+        source_name="influencer_roster", file_path=source_file
+    )
+    ingestion_run_id = create_test_ingestion_run(postgres_connection)
+    registered_file = register_file(
+        connection=postgres_connection,
+        ingestion_run_id=ingestion_run_id,
+        metadata=metadata,
+    )
+    contract = get_load_contract("influencer_roster")
+    dataframe = pd.DataFrame(
+        [{
+            "Influencer": "Synthetic Creator",
+            "Follower": "10000",
+            "Engangement Rate%": "0.05",
+            "BUDGET": "2000",
+            "audience_segment": "synthetic",
+        }]
+    )
+    lineage = LineageMetadata(
+        source_file=source_file.name,
+        batch_id="batch_influencer_roster_contract",
+        file_hash=metadata.file_hash_sha256,
+        pipeline_run_id=ingestion_run_id,
+        ingestion_file_id=registered_file.ingestion_file_id,
+        ingested_at=datetime(2026, 9, 8, tzinfo=UTC),
+    )
+    result = bulk_load_source(
+        connection=postgres_connection,
+        source_name="influencer_roster",
+        dataframe=dataframe,
+        column_mapping=contract.column_mapping,
+        lineage=lineage,
+    )
+    assert result.rows_loaded == 1
+    with postgres_connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT influencer_name, follower_count, engagement_rate, budget,
+                   source_payload ->> 'audience_segment',
+                   header_schema_version, _source_row_number
+            FROM raw.influencer_roster
+            WHERE _ingestion_file_id = %s;
+            """,
+            (registered_file.ingestion_file_id,),
+        )
+        loaded = cursor.fetchone()
+    assert loaded == (
+        "Synthetic Creator", "10000", "0.05", "2000",
+        "synthetic", "influencer_roster_v1", 1,
+    )

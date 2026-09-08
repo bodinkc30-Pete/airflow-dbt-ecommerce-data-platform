@@ -168,6 +168,21 @@ def _extract_product_master_two_level(
     return data
 
 
+def _trim_influencer_roster_trailing_blank_rows(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
+    identity_column = "Influencer"
+    if identity_column not in dataframe.columns:
+        return dataframe
+
+    non_blank = dataframe[identity_column].astype(str).str.strip().ne("")
+    if not non_blank.any():
+        return dataframe.iloc[0:0].copy()
+
+    last_valid_position = int(non_blank.to_numpy().nonzero()[0][-1])
+    return dataframe.iloc[: last_valid_position + 1].copy()
+
+
 def extract_source_file(
     source_name: str,
     file_path: str | Path,
@@ -207,6 +222,9 @@ def extract_source_file(
     )
 
     campaign_date_header = "\u0e15\u0e32\u0e21\u0e27\u0e31\u0e19"
+    if source_name == "influencer_roster":
+        dataframe = _trim_influencer_roster_trailing_blank_rows(dataframe)
+
     if (
         source_name == "campaign_overview"
         and campaign_date_header in dataframe.columns

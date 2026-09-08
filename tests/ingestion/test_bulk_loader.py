@@ -6,6 +6,7 @@ import pytest
 from ecommerce_pipeline.ingestion.bulk_loader import (
     LineageMetadata,
     _split_target_table,
+    prepare_influencer_roster_dataframe,
     prepare_product_master_dataframe,
     prepare_raw_dataframe,
 )
@@ -376,3 +377,27 @@ def test_prepare_product_master_dataframe_preserves_full_payload() -> None:
     assert len(payload) == 6
     assert prepared.loc[0, "product_id"] == "PROD_SYN_001"
     assert prepared.loc[0, "product_name"] == "Synthetic product"
+
+
+def test_prepare_influencer_roster_dataframe_preserves_full_payload() -> None:
+    dataframe = pd.DataFrame(
+        {
+            "Influencer": ["Synthetic Creator"],
+            "Follower": ["10000"],
+            "Engangement Rate%": ["0.05"],
+            "BUDGET": ["2000"],
+            "audience_gender": ["synthetic"],
+        }
+    )
+    mapping = {
+        "Influencer": "influencer_name",
+        "Follower": "follower_count",
+        "Engangement Rate%": "engagement_rate",
+        "BUDGET": "budget",
+    }
+    prepared = prepare_influencer_roster_dataframe(
+        dataframe=dataframe, column_mapping=mapping, lineage=_lineage()
+    )
+    assert prepared.loc[0, "influencer_name"] == "Synthetic Creator"
+    assert prepared.loc[0, "source_payload"].adapted["audience_gender"] == "synthetic"
+    assert len(prepared.loc[0, "source_payload"].adapted) == 5

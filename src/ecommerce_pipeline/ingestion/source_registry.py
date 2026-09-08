@@ -149,6 +149,22 @@ SOURCE_REGISTRY: dict[str, SourceConfig] = {
         supports_multiple_files=True,
         supports_late_arriving_data=False,
     ),
+    "influencer_roster": SourceConfig(
+        source_id="SRC_INFLUENCER_ROSTER",
+        source_name="influencer_roster",
+        domain="Influencer / Creator Operations",
+        file_pattern="influencer_data.csv",
+        file_format="csv",
+        target_table="raw.influencer_roster",
+        contract_path="docs/source_contracts/08_influencer_roster_source_contract.md",
+        load_strategy="snapshot",
+        header_row=0,
+        expected_grain="one influencer roster export row",
+        business_key=("influencer_name",),
+        preserve_source_text=True,
+        supports_multiple_files=False,
+        supports_late_arriving_data=False,
+    ),
 }
 
 
@@ -174,9 +190,9 @@ def list_source_names() -> tuple[str, ...]:
 def validate_source_registry() -> None:
     """Validate invariants that every registry entry must satisfy."""
 
-    if len(SOURCE_REGISTRY) != 7:
+    if len(SOURCE_REGISTRY) != 8:
         raise ValueError(
-            f"Expected 7 registered sources, found {len(SOURCE_REGISTRY)}"
+            f"Expected 8 registered sources, found {len(SOURCE_REGISTRY)}"
         )
 
     source_ids: set[str] = set()

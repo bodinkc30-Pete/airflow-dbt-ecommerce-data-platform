@@ -376,3 +376,34 @@ def test_extract_campaign_overview_excludes_non_daily_footer_row(
         "2026-07-01",
         "2026-07-02",
     ]
+
+
+def test_extract_influencer_roster_drops_trailing_blank_export_rows(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "influencer_data.csv"
+    columns = [
+        "Unnamed: 0",
+        "Influencer",
+        "Follower",
+        "Engangement Rate%",
+        "BUDGET",
+        "sales_30d",
+        "audience_gender",
+        "audience_age",
+        "Pet",
+        "selected",
+        "Unnamed: 10",
+        "Unnamed: 11",
+    ]
+    valid = ["1", "Synthetic Creator", "10000", "0.05", "2000"] + [""] * 7
+    blank = [""] * 12
+    pd.DataFrame([valid, blank, blank], columns=columns).to_csv(
+        file_path, index=False
+    )
+
+    result = extract_source_file("influencer_roster", file_path)
+
+    assert result.row_count == 1
+    assert result.column_count == 12
+    assert result.dataframe.iloc[0]["Influencer"] == "Synthetic Creator"

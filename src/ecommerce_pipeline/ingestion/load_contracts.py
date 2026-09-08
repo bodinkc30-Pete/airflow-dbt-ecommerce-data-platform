@@ -298,6 +298,14 @@ _SKU_MASTER_COLUMN_MAPPING = {
 }
 
 
+_INFLUENCER_ROSTER_COLUMN_MAPPING = {
+    "Influencer": "influencer_name",
+    "Follower": "follower_count",
+    "Engangement Rate%": "engagement_rate",
+    "BUDGET": "budget",
+}
+
+
 _SHOP_ANALYTICS_COLUMN_MAPPING = {
     "\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48": "metric_date",
     "GMV": "gmv",
@@ -429,6 +437,10 @@ class LoadContract:
 
 
 LOAD_CONTRACTS: dict[str, LoadContract] = {
+    "influencer_roster": LoadContract(
+        source_name="influencer_roster",
+        column_mapping=_INFLUENCER_ROSTER_COLUMN_MAPPING,
+    ),
     "orders": LoadContract(
         source_name="orders",
         column_mapping=_ORDERS_COLUMN_MAPPING,

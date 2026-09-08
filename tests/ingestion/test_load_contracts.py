@@ -468,9 +468,11 @@ def test_only_verified_load_contracts_are_registered() -> None:
         "product_master",
         "shop_analytics",
         "sku_master",
+        "influencer_roster",
     }
     assert list_load_contract_names() == (
         "campaign_overview",
+        "influencer_roster",
         "live_performance",
         "orders",
         "product_card_traffic",
@@ -521,3 +523,13 @@ def test_sku_master_load_contract_contains_verified_seven_columns() -> None:
 
     assert contract.source_name == "sku_master"
     assert contract.column_mapping == expected_mapping
+
+
+def test_influencer_roster_load_contract_maps_verified_core_columns() -> None:
+    contract = get_load_contract("influencer_roster")
+    assert contract.column_mapping == {
+        "Influencer": "influencer_name",
+        "Follower": "follower_count",
+        "Engangement Rate%": "engagement_rate",
+        "BUDGET": "budget",
+    }

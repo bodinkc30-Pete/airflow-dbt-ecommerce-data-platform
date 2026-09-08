@@ -219,6 +219,7 @@ def test_discover_all_sources_returns_all_registry_sources(
         "product_card_traffic",
         "product_master",
         "sku_master",
+        "influencer_roster",
     }
 
 

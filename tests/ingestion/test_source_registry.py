@@ -16,6 +16,7 @@ EXPECTED_SOURCES = {
     "product_card_traffic",
     "product_master",
     "sku_master",
+    "influencer_roster",
 }
 
 
@@ -27,11 +28,12 @@ EXPECTED_TARGET_TABLES = {
     "product_card_traffic": "raw.product_card_daily",
     "product_master": "raw.products",
     "sku_master": "raw.skus",
+    "influencer_roster": "raw.influencer_roster",
 }
 
 
-def test_registry_contains_exactly_seven_sources() -> None:
-    assert len(SOURCE_REGISTRY) == 7
+def test_registry_contains_exactly_eight_sources() -> None:
+    assert len(SOURCE_REGISTRY) == 8
     assert set(SOURCE_REGISTRY) == EXPECTED_SOURCES
 
 
@@ -138,6 +140,7 @@ def test_snapshot_sources_are_configured_correctly() -> None:
     expected_snapshot = {
         "product_master",
         "sku_master",
+        "influencer_roster",
     }
 
     actual_snapshot = {

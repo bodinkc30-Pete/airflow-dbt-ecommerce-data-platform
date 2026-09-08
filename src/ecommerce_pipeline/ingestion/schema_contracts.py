@@ -162,6 +162,21 @@ SCHEMA_CONTRACTS: dict[str, SchemaContract] = {
             ),
         ),
     ),
+    "influencer_roster": SchemaContract(
+        source_name="influencer_roster",
+        expected_column_count=12,
+        header_strategy="flat",
+        drift_policy="strict",
+        required_columns=(
+            RequiredColumn(
+                canonical_name="influencer_name",
+                accepted_source_names=(
+                    "Influencer",
+                    "influencer_name",
+                ),
+            ),
+        ),
+    ),
 }
 
 
@@ -181,9 +196,9 @@ def list_schema_contract_names() -> tuple[str, ...]:
 
 
 def validate_schema_contracts() -> None:
-    if len(SCHEMA_CONTRACTS) != 7:
+    if len(SCHEMA_CONTRACTS) != 8:
         raise ValueError(
-            "Schema contract registry must contain exactly 7 sources"
+            "Schema contract registry must contain exactly 8 sources"
         )
 
     for registry_name, contract in SCHEMA_CONTRACTS.items():

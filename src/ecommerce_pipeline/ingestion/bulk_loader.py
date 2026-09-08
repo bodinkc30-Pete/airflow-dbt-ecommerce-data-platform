@@ -141,6 +141,55 @@ def prepare_raw_dataframe(
     return prepared
 
 
+def prepare_influencer_roster_dataframe(
+    dataframe: pd.DataFrame,
+    *,
+    column_mapping: Mapping[str, str],
+    lineage: LineageMetadata,
+    source_row_start: int = 1,
+) -> pd.DataFrame:
+    explicit_columns = (
+        "influencer_name",
+        "follower_count",
+        "engagement_rate",
+        "budget",
+    )
+    if set(column_mapping.values()) != set(explicit_columns):
+        raise ValueError(
+            "Influencer roster mapping must define exactly: "
+            + ", ".join(explicit_columns)
+        )
+
+    prepared = prepare_raw_dataframe(
+        dataframe=dataframe,
+        column_mapping=column_mapping,
+        lineage=lineage,
+        source_row_start=source_row_start,
+    )
+    lineage_columns = (
+        "_source_file",
+        "_source_row_number",
+        "_batch_id",
+        "_file_hash",
+        "_ingested_at",
+        "_pipeline_run_id",
+        "_ingestion_file_id",
+    )
+    prepared = prepared.loc[:, [*explicit_columns, *lineage_columns]]
+    normalized_source = _normalize_dataframe_nulls(dataframe)
+    payloads = [
+        Json(
+            {
+                str(column): (None if value is None else str(value))
+                for column, value in row.items()
+            }
+        )
+        for row in normalized_source.to_dict(orient="records")
+    ]
+    prepared.insert(len(explicit_columns), "source_payload", payloads)
+    return prepared
+
+
 def prepare_product_master_dataframe(
     dataframe: pd.DataFrame,
     *,
@@ -276,7 +325,14 @@ def bulk_load_source(
 ) -> BulkLoadResult:
     source_config = get_source_config(source_name)
 
-    if source_name == "product_master":
+    if source_name == "influencer_roster":
+        prepared = prepare_influencer_roster_dataframe(
+            dataframe=dataframe,
+            column_mapping=column_mapping,
+            lineage=lineage,
+            source_row_start=source_row_start,
+        )
+    elif source_name == "product_master":
         prepared = prepare_product_master_dataframe(
             dataframe=dataframe,
             column_mapping=column_mapping,
