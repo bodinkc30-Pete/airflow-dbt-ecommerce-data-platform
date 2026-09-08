@@ -51,3 +51,27 @@ validation, and raw-row identity by ingestion file plus source row number.
 ## Public Portfolio Policy
 
 Tests and demonstrations must use synthetic schema-preserving creator data only.
+
+
+## Runtime Data Quality Gate
+
+Schema-critical headers are `Influencer`, `Follower`, `Engangement Rate%`, and
+`BUDGET`. A missing core header or incompatible column count fails before load
+and is recorded in `audit.schema_events`.
+
+Row-level checks are recorded in `audit.data_quality_results`:
+
+- blank influencer identity: `fail` and block raw load
+- normalized duplicate influencer identity: `warning`, preserve raw rows
+- follower not numeric/non-negative: `warning`
+- budget not numeric/non-negative: `warning`
+- engagement rate not parseable or outside 0..100: `warning`
+
+Warnings never mutate, deduplicate, or discard raw source rows.
+
+## Multi-Workbook Boundary
+
+This contract applies only to the verified `influencer_data.csv` export. Private
+client workbooks contain heterogeneous sheet layouts and must not be forced into
+this contract. Each materially different workbook layout requires profiling and
+a separately verified intake contract or adapter before ingestion.

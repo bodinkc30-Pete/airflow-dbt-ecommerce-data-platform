@@ -170,10 +170,19 @@ SCHEMA_CONTRACTS: dict[str, SchemaContract] = {
         required_columns=(
             RequiredColumn(
                 canonical_name="influencer_name",
-                accepted_source_names=(
-                    "Influencer",
-                    "influencer_name",
-                ),
+                accepted_source_names=("Influencer",),
+            ),
+            RequiredColumn(
+                canonical_name="follower_count",
+                accepted_source_names=("Follower",),
+            ),
+            RequiredColumn(
+                canonical_name="engagement_rate",
+                accepted_source_names=("Engangement Rate%",),
+            ),
+            RequiredColumn(
+                canonical_name="budget",
+                accepted_source_names=("BUDGET",),
             ),
         ),
     ),

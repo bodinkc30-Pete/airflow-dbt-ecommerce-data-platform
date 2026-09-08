@@ -8,6 +8,11 @@ from ecommerce_pipeline.ingestion.audit_lifecycle import (
     mark_file_success,
 )
 from ecommerce_pipeline.ingestion.bulk_loader import LineageMetadata, bulk_load_source
+from ecommerce_pipeline.ingestion.data_quality import (
+    evaluate_source_quality,
+    has_blocking_quality_failures,
+    record_data_quality_results,
+)
 from ecommerce_pipeline.ingestion.extraction_adapters import extract_source_file
 from ecommerce_pipeline.ingestion.file_discovery import discover_all_sources
 from ecommerce_pipeline.ingestion.file_registry import (
@@ -24,6 +29,10 @@ from ecommerce_pipeline.ingestion.run_lifecycle import (
     create_ingestion_run,
     mark_run_failed,
     mark_run_success,
+)
+from ecommerce_pipeline.ingestion.schema_drift import (
+    classify_schema_drift,
+    record_schema_events,
 )
 from ecommerce_pipeline.ingestion.schema_validation import validate_schema
 from ecommerce_pipeline.ingestion.source_registry import list_source_names
@@ -249,6 +258,7 @@ with DAG(
                     f"issues={issues}"
                 )
 
+                schema_events = classify_schema_drift(validation)
                 connection = _connect_application_postgres()
 
                 try:
@@ -257,6 +267,12 @@ with DAG(
                             connection,
                             ingestion_file_id=ingestion_file_id,
                             rows_discovered=extraction.row_count,
+                        )
+                        record_schema_events(
+                            connection,
+                            ingestion_run_id=ingestion_run_id,
+                            ingestion_file_id=ingestion_file_id,
+                            events=schema_events,
                         )
                         mark_file_failed(
                             connection,
@@ -272,6 +288,23 @@ with DAG(
                 raise RuntimeError(error_message)
 
             rows_loaded = 0
+            quality_results = evaluate_source_quality(
+                source_name=source_name,
+                dataframe=extraction.dataframe,
+            )
+            blocking_quality_failure = has_blocking_quality_failures(
+                quality_results
+            )
+            quality_failures = [
+                result.check_name
+                for result in quality_results
+                if result.status == "fail"
+            ]
+            quality_warnings = [
+                result.check_name
+                for result in quality_results
+                if result.status == "warning"
+            ]
 
             if source_name in load_contract_names:
                 contract = get_load_contract(source_name)
@@ -288,12 +321,36 @@ with DAG(
                 connection = _connect_application_postgres()
 
                 try:
+                    quality_error_message = (
+                        "Data quality validation failed before load: "
+                        f"source={source_name}, file={file_name}, "
+                        f"checks={','.join(quality_failures)}"
+                    )
                     with transaction_scope(connection):
                         mark_file_processing(
                             connection,
                             ingestion_file_id=ingestion_file_id,
                             rows_discovered=extraction.row_count,
                         )
+                        record_data_quality_results(
+                            connection,
+                            ingestion_run_id=ingestion_run_id,
+                            ingestion_file_id=ingestion_file_id,
+                            source_name=source_name,
+                            results=quality_results,
+                        )
+                        if blocking_quality_failure:
+                            mark_file_failed(
+                                connection,
+                                ingestion_file_id=ingestion_file_id,
+                                rows_discovered=extraction.row_count,
+                                rows_loaded=0,
+                                rows_rejected=extraction.row_count,
+                                error_message=quality_error_message,
+                            )
+
+                    if blocking_quality_failure:
+                        raise RuntimeError(quality_error_message)
 
                     try:
                         with transaction_scope(connection):
@@ -346,6 +403,9 @@ with DAG(
                     "column_count": extraction.column_count,
                     "schema_status": validation.status,
                     "issue_codes": issue_codes,
+                    "quality_check_count": len(quality_results),
+                    "quality_failures": quality_failures,
+                    "quality_warnings": quality_warnings,
                 }
             )
 

@@ -171,15 +171,20 @@ def _extract_product_master_two_level(
 def _trim_influencer_roster_trailing_blank_rows(
     dataframe: pd.DataFrame,
 ) -> pd.DataFrame:
-    identity_column = "Influencer"
-    if identity_column not in dataframe.columns:
-        return dataframe
+    if dataframe.empty:
+        return dataframe.copy()
 
-    non_blank = dataframe[identity_column].astype(str).str.strip().ne("")
-    if not non_blank.any():
+    normalized = dataframe.astype(str).apply(
+        lambda column: column.str.strip()
+    )
+    non_blank_row = normalized.ne("").any(axis=1)
+
+    if not non_blank_row.any():
         return dataframe.iloc[0:0].copy()
 
-    last_valid_position = int(non_blank.to_numpy().nonzero()[0][-1])
+    last_valid_position = int(
+        non_blank_row.to_numpy().nonzero()[0][-1]
+    )
     return dataframe.iloc[: last_valid_position + 1].copy()
 
 

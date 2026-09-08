@@ -228,10 +228,15 @@ def test_product_master_includes_verified_thai_product_id_alias() -> None:
     assert thai_product_id in required.accepted_source_names
 
 
-def test_influencer_roster_requires_influencer_name() -> None:
+def test_influencer_roster_requires_verified_core_headers() -> None:
     contract = get_schema_contract("influencer_roster")
     required_names = {
         column.canonical_name
         for column in contract.required_columns
     }
-    assert required_names == {"influencer_name"}
+    assert required_names == {
+        "influencer_name",
+        "follower_count",
+        "engagement_rate",
+        "budget",
+    }
