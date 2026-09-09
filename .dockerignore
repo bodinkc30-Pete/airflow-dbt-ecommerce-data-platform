@@ -1,0 +1,29 @@
+# Repository metadata and local environment
+.git
+.github
+.env
+.env.*
+!.env.example
+
+# Private/runtime data and logs
+data/
+logs/
+
+# Generated dbt and Python artifacts
+dbt/target/
+dbt/logs/
+dbt/.user.yml
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Local virtual environments and editor state
+.venv/
+venv/
+.vscode/
+.idea/
+
+# Temporary local patch/scratch files
+.part*
+*.tmp
