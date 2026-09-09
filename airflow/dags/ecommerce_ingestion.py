@@ -1,6 +1,9 @@
 import os
+from datetime import timedelta
 
+import pendulum
 from airflow.sdk import DAG, get_current_context, setup, task, teardown
+from airflow.timetables.interval import CronDataIntervalTimetable
 
 from ecommerce_pipeline.ingestion.audit_lifecycle import (
     mark_file_failed,
@@ -37,6 +40,10 @@ from ecommerce_pipeline.ingestion.schema_drift import (
 from ecommerce_pipeline.ingestion.schema_validation import validate_schema
 from ecommerce_pipeline.ingestion.source_registry import list_source_names
 from ecommerce_pipeline.ingestion.transaction import transaction_scope
+from ecommerce_pipeline.orchestration.dbt_runner import (
+    resolve_backfill_vars,
+    run_dbt_command,
+)
 
 _WORK_TASK_IDS = (
     "validate_ingestion_runtime",
@@ -103,9 +110,16 @@ def _normalize_airflow_run_type(run_type: object) -> str:
 
 with DAG(
     dag_id="ecommerce_ingestion",
-    schedule=None,
+    schedule=CronDataIntervalTimetable(
+        "0 2 * * *", timezone="Asia/Bangkok"
+    ),
+    start_date=pendulum.datetime(2026, 9, 1, tz="Asia/Bangkok"),
     catchup=False,
-    tags=["ecommerce", "ingestion"],
+    max_active_runs=1,
+    max_active_tasks=4,
+    dagrun_timeout=timedelta(hours=2),
+    is_paused_upon_creation=True,
+    tags=["ecommerce", "ingestion", "dbt", "production"],
 ) as dag:
 
     @setup
@@ -212,7 +226,10 @@ with DAG(
 
         return registration_results
 
-    @task
+    @task(
+        pool="postgres_ingestion",
+        execution_timeout=timedelta(minutes=30),
+    )
     def extract_and_validate_registered_files(
         ingestion_run_id: int,
         registered_files: list[dict[str, str | int]],
@@ -411,6 +428,78 @@ with DAG(
 
         return validation_summaries
 
+    @task
+    def resolve_dbt_runtime_context() -> dict[str, str]:
+        context = get_current_context()
+        dag_run = context["dag_run"]
+        variables = resolve_backfill_vars(
+            dag_run.run_type,
+            context.get("data_interval_start"),
+            context.get("data_interval_end"),
+        )
+        mode = "backfill" if variables else "incremental"
+        print(f"dbt execution mode={mode}")
+        return variables
+
+    @task(
+        pool="dbt_transform",
+        execution_timeout=timedelta(minutes=10),
+    )
+    def dbt_compile(dbt_vars: dict[str, str]) -> None:
+        run_dbt_command(
+            ["compile"],
+            variables=dbt_vars,
+            timeout_seconds=480,
+        )
+
+    @task(
+        pool="dbt_transform",
+        execution_timeout=timedelta(minutes=10),
+    )
+    def dbt_source_freshness(dbt_vars: dict[str, str]) -> None:
+        run_dbt_command(
+            ["source", "freshness"],
+            variables=dbt_vars,
+            timeout_seconds=480,
+        )
+
+    @task(
+        pool="dbt_transform",
+        retries=2,
+        retry_delay=timedelta(minutes=2),
+        retry_exponential_backoff=True,
+        max_retry_delay=timedelta(minutes=10),
+        execution_timeout=timedelta(minutes=45),
+    )
+    def dbt_run_transformations(dbt_vars: dict[str, str]) -> None:
+        run_dbt_command(
+            ["run"],
+            variables=dbt_vars,
+            timeout_seconds=2400,
+        )
+
+    @task(
+        pool="dbt_transform",
+        execution_timeout=timedelta(minutes=30),
+    )
+    def dbt_test_blocking(dbt_vars: dict[str, str]) -> None:
+        run_dbt_command(
+            ["test", "--exclude", "tag:dq_warning"],
+            variables=dbt_vars,
+            timeout_seconds=1500,
+        )
+
+    @task(
+        pool="dbt_transform",
+        execution_timeout=timedelta(minutes=15),
+    )
+    def dbt_test_warning(dbt_vars: dict[str, str]) -> None:
+        run_dbt_command(
+            ["test", "--selector", "dq_warning"],
+            variables=dbt_vars,
+            timeout_seconds=720,
+        )
+
     @teardown(on_failure_fail_dagrun=True)
     def finalize_airflow_ingestion_run(ingestion_run_id: int) -> None:
         """Finalize the application audit run from the observed Airflow work states."""
@@ -535,8 +624,9 @@ with DAG(
             raise RuntimeError(teardown_error)
 
     ingestion_run_id = create_airflow_ingestion_run()
+    ingestion_finalizer = finalize_airflow_ingestion_run(ingestion_run_id)
 
-    with finalize_airflow_ingestion_run(ingestion_run_id):
+    with ingestion_finalizer:
         validate_runtime = validate_ingestion_runtime()
         discovered_files = discover_demo_source_files()
         registered_files = register_discovered_files(
@@ -547,13 +637,29 @@ with DAG(
             ingestion_run_id=ingestion_run_id,
             registered_files=registered_files,
         )
-
         (
             validate_runtime
             >> discovered_files
             >> registered_files
             >> validated_files
         )
+
+    dbt_vars = resolve_dbt_runtime_context()
+    compiled = dbt_compile(dbt_vars)
+    freshness = dbt_source_freshness(dbt_vars)
+    transformed = dbt_run_transformations(dbt_vars)
+    blocking_tests = dbt_test_blocking(dbt_vars)
+    warning_tests = dbt_test_warning(dbt_vars)
+
+    (
+        ingestion_finalizer
+        >> dbt_vars
+        >> compiled
+        >> freshness
+        >> transformed
+        >> blocking_tests
+        >> warning_tests
+    )
 
 
 if __name__ == "__main__":

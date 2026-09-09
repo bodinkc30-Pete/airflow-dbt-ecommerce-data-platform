@@ -72,6 +72,8 @@ services:
       - -c
       - |
         airflow db migrate
+        airflow pools set postgres_ingestion 2 "PostgreSQL ingestion work"
+        airflow pools set dbt_transform 1 "Serialized dbt transformations"
 
   airflow-api-server:
     build: .
@@ -149,6 +151,7 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__API__BASE_URL: http://airflow-api-server:8080
       PYTHONPATH: /opt/airflow/src
 
       DATA_MODE: ${DATA_MODE:-demo}
@@ -162,6 +165,17 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
       POSTGRES_USER: ${POSTGRES_USER:-airflow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+
+      DBT_PROFILES_DIR: /opt/airflow/dbt
+      DBT_PROJECT_DIR: /opt/airflow/dbt
+      DBT_TARGET: ${DBT_TARGET:-dev}
+      DBT_POSTGRES_HOST: ${DBT_POSTGRES_HOST:-postgres}
+      DBT_POSTGRES_PORT: ${DBT_POSTGRES_PORT:-5432}
+      DBT_POSTGRES_DB: ${DBT_POSTGRES_DB:-ecommerce}
+      DBT_POSTGRES_USER: ${DBT_POSTGRES_USER:-airflow}
+      DBT_POSTGRES_PASSWORD: ${DBT_POSTGRES_PASSWORD:-change_me}
+      DBT_SCHEMA: ${DBT_SCHEMA:-analytics}
+      DBT_THREADS: ${DBT_THREADS:-4}
 
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: >-
         postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/airflow
