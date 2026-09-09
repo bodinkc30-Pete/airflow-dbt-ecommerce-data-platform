@@ -1,5 +1,20 @@
 with source as (
-    select * from {{ source('raw', 'orders') }}
+    select
+        raw_order_row_id, order_id, order_status, order_substatus,
+        cancelation_return_type, normal_or_pre_order, sku_id, seller_sku,
+        product_name, variation, quantity, sku_quantity_of_return,
+        sku_unit_original_price, sku_subtotal_before_discount,
+        sku_platform_discount, sku_seller_discount, sku_subtotal_after_discount,
+        shipping_fee_after_discount, original_shipping_fee,
+        shipping_fee_seller_discount, shipping_fee_platform_discount,
+        payment_platform_discount, taxes, order_amount, order_refund_amount,
+        created_time, paid_time, rts_time, shipped_time, delivered_time,
+        cancelled_time, cancel_by, cancel_reason, fulfillment_type, warehouse_name,
+        delivery_option, shipping_provider_name, payment_method, weight_kg,
+        product_category, checked_status, order_channel, creator_handle,
+        request_tax_invoice, _source_file, _source_row_number, _batch_id,
+        _file_hash, _ingested_at, _pipeline_run_id, _ingestion_file_id
+    from {{ source('raw', 'orders') }}
 )
 
 select

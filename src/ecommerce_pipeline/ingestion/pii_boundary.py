@@ -7,6 +7,7 @@ PIIClass = Literal[
     "address",
     "tax",
     "free_text",
+    "operational_identifier",
 ]
 
 Boundary = Literal[
@@ -51,6 +52,9 @@ ORDERS_PII_FIELDS: tuple[PIIField, ...] = (
     PIIField("tax_info_email", "tax"),
     PIIField("tax_info_phone_number", "tax"),
     PIIField("tax_info_registered_address", "tax"),
+    PIIField("tracking_id", "operational_identifier"),
+    PIIField("package_id", "operational_identifier"),
+    PIIField("checked_marked_by", "operational_identifier"),
 )
 
 

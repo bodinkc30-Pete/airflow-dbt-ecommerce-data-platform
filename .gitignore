@@ -23,6 +23,7 @@ venv/
 data/private/
 data/raw/
 data/processed/
+data/demo_runtime/
 
 # Local databases
 database/*.db

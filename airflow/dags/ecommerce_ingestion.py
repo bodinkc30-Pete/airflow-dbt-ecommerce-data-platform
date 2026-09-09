@@ -84,6 +84,7 @@ def _connect_application_postgres():
         database=os.getenv("POSTGRES_DB", "ecommerce"),
         user=os.getenv("POSTGRES_USER", "airflow"),
         password=os.getenv("POSTGRES_PASSWORD", "change_me"),
+        role=os.getenv("POSTGRES_ROLE", "ecommerce_ingest_writer"),
     )
     connection.autocommit = False
     return connection

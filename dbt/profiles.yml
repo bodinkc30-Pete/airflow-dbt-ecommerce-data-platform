@@ -7,6 +7,7 @@ project06_ecommerce:
       port: "{{ env_var('DBT_POSTGRES_PORT', '5432') | int }}"
       user: "{{ env_var('DBT_POSTGRES_USER', 'airflow') }}"
       pass: "{{ env_var('DBT_POSTGRES_PASSWORD', 'change_me') }}"
+      role: "{{ env_var('DBT_POSTGRES_ROLE', 'ecommerce_transformer') }}"
       dbname: "{{ env_var('DBT_POSTGRES_DB', 'ecommerce') }}"
       schema: "{{ env_var('DBT_SCHEMA', 'analytics') }}"
       threads: "{{ env_var('DBT_THREADS', '2') | int }}"

@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
@@ -8,6 +9,8 @@ import psycopg2
 from psycopg2.extensions import connection as PgConnection
 
 from ecommerce_pipeline.ingestion.source_registry import get_source_config
+
+_ROLE_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 @dataclass(frozen=True)
@@ -67,9 +70,7 @@ def build_file_metadata(
         file_name=path.name,
         file_path=str(path),
         file_size_bytes=stat.st_size,
-        file_modified_at=datetime.fromtimestamp(
-            stat.st_mtime
-        ).astimezone(),
+        file_modified_at=datetime.fromtimestamp(stat.st_mtime).astimezone(),
         file_hash_sha256=calculate_sha256(path),
     )
 
@@ -191,11 +192,19 @@ def connect_postgres(
     database: str,
     user: str,
     password: str,
+    role: str | None = None,
 ) -> PgConnection:
-    return psycopg2.connect(
-        host=host,
-        port=port,
-        dbname=database,
-        user=user,
-        password=password,
-    )
+    connect_kwargs: dict[str, object] = {
+        "host": host,
+        "port": port,
+        "dbname": database,
+        "user": user,
+        "password": password,
+    }
+
+    if role is not None:
+        if not _ROLE_NAME_PATTERN.fullmatch(role):
+            raise ValueError(f"Invalid PostgreSQL role name: {role!r}")
+        connect_kwargs["options"] = f"-c role={role}"
+
+    return psycopg2.connect(**connect_kwargs)
