@@ -1,5 +1,18 @@
+{{ config(
+    materialized='incremental',
+    unique_key='order_item_key',
+    incremental_strategy='delete+insert',
+    on_schema_change='fail'
+) }}
+
 with orders as (
-    select * from {{ ref('int_order_items_enriched') }}
+    select *
+    from {{ ref('int_order_items_enriched') }}
+    where {{ incremental_window_predicate(
+        'ingested_at',
+        'ingested_at',
+        'created_at::date'
+    ) }}
 )
 
 select

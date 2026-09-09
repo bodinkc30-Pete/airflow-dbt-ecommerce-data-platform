@@ -1,5 +1,28 @@
-with items as (
+{{ config(
+    materialized='incremental',
+    unique_key='order_key',
+    incremental_strategy='delete+insert',
+    on_schema_change='fail'
+) }}
+
+with items_all as (
     select * from {{ ref('int_order_items_current') }}
+),
+
+changed_orders as (
+    select distinct order_id
+    from items_all
+    where {{ incremental_window_predicate(
+        'ingested_at',
+        'last_seen_at',
+        'created_at::date'
+    ) }}
+),
+
+items as (
+    select items_all.*
+    from items_all
+    join changed_orders using (order_id)
 ),
 
 order_stats as (

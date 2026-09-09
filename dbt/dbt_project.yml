@@ -26,3 +26,6 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+vars:
+  incremental_lookback_hours: 24

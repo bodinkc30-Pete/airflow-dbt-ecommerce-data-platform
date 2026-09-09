@@ -10,3 +10,9 @@ selectors:
     definition:
       method: tag
       value: dq_warning
+
+  - name: incremental_facts
+    description: Operational fact models that use target-derived watermarks.
+    definition:
+      method: config.materialized
+      value: incremental
