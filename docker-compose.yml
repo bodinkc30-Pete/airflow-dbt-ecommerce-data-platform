@@ -9,6 +9,15 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
 
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - track_io_timing=on
+      - -c
+      - log_lock_waits=on
+
     ports:
       - "5432:5432"
 
@@ -175,7 +184,7 @@ services:
       DBT_POSTGRES_USER: ${DBT_POSTGRES_USER:-airflow}
       DBT_POSTGRES_PASSWORD: ${DBT_POSTGRES_PASSWORD:-change_me}
       DBT_SCHEMA: ${DBT_SCHEMA:-analytics}
-      DBT_THREADS: ${DBT_THREADS:-4}
+      DBT_THREADS: ${DBT_THREADS:-2}
 
       PIPELINE_SLOW_THRESHOLD_SECONDS: ${PIPELINE_SLOW_THRESHOLD_SECONDS:-180}
       PIPELINE_ALERT_WEBHOOK_URL: ${PIPELINE_ALERT_WEBHOOK_URL:-}

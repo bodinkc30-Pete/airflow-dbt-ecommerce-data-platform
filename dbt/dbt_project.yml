@@ -26,6 +26,8 @@ models:
     marts:
       +materialized: table
       +schema: marts
+      +post-hook:
+        - "analyze {{ this }}"
 
 vars:
   incremental_lookback_hours: 24
