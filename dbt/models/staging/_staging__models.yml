@@ -3,6 +3,21 @@ version: 2
 models:
   - name: stg_orders
     description: Analytics-safe normalized order-SKU source rows with PII excluded.
+    data_tests:
+      - timestamp_not_before:
+          arguments:
+            later_column: paid_at
+            earlier_column: created_at
+          config:
+            severity: warn
+            tags: [dq_warning]
+      - timestamp_not_before:
+          arguments:
+            later_column: delivered_at
+            earlier_column: shipped_at
+          config:
+            severity: warn
+            tags: [dq_warning]
     columns:
       - name: order_row_id
         data_tests: [not_null, unique]
@@ -10,6 +25,22 @@ models:
         data_tests: [not_null]
       - name: sku_id
         data_tests: [not_null]
+      - name: quantity
+        data_tests:
+          - not_null:
+              config: {severity: warn, tags: [dq_warning]}
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: returned_quantity
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: order_amount
+        data_tests:
+          - not_null:
+              config: {severity: warn, tags: [dq_warning]}
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
 
   - name: stg_products
     description: Normalized Product Master snapshot rows.
@@ -36,24 +67,95 @@ models:
     columns:
       - name: shop_daily_row_id
         data_tests: [not_null, unique]
+      - name: metric_date
+        data_tests:
+          - not_null:
+              config: {severity: warn, tags: [dq_warning]}
+      - name: gmv
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: conversion_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
 
   - name: stg_campaign
     description: Typed shop-level advertising performance by day.
     columns:
       - name: campaign_daily_row_id
         data_tests: [not_null, unique]
+      - name: metric_date
+        data_tests:
+          - not_null:
+              config: {severity: warn, tags: [dq_warning]}
+      - name: ad_cost
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: gross_revenue
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
 
   - name: stg_live
     description: Typed LIVE performance daily metrics.
     columns:
       - name: live_daily_row_id
         data_tests: [not_null, unique]
+      - name: metric_date
+        data_tests:
+          - not_null:
+              config: {severity: warn, tags: [dq_warning]}
+      - name: live_attributed_gmv
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: live_click_through_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
 
   - name: stg_product_card
     description: Typed Product Card traffic daily metrics.
     columns:
       - name: product_card_daily_row_id
         data_tests: [not_null, unique]
+      - name: metric_date
+        data_tests:
+          - not_null:
+              config: {severity: warn, tags: [dq_warning]}
+      - name: product_card_gmv
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: add_to_cart_to_payment_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
+      - name: product_click_to_add_to_cart_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
+      - name: view_to_product_click_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
+      - name: view_to_payment_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
+      - name: product_click_to_payment_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
 
   - name: stg_influencer
     description: Typed influencer roster rows without entity resolution.
@@ -62,3 +164,16 @@ models:
         data_tests: [not_null, unique]
       - name: influencer_name
         data_tests: [not_null]
+      - name: follower_count
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}
+      - name: engagement_rate
+        data_tests:
+          - value_between:
+              arguments: {min_value: 0, max_value: 1}
+              config: {severity: warn, tags: [dq_warning]}
+      - name: budget
+        data_tests:
+          - non_negative:
+              config: {severity: error, tags: [dq_blocking]}

@@ -8,41 +8,73 @@ sources:
     tables:
       - name: orders
         description: TikTok Seller order-SKU source lines.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 48, period: hour}
         columns:
           - name: raw_order_row_id
             data_tests: [not_null, unique]
       - name: shop_daily
         description: Shop Analytics daily metrics.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 48, period: hour}
         columns:
           - name: raw_shop_daily_row_id
             data_tests: [not_null, unique]
       - name: campaign_daily
         description: Shop-level campaign performance by day.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 48, period: hour}
         columns:
           - name: raw_campaign_daily_row_id
             data_tests: [not_null, unique]
       - name: live_daily
         description: LIVE performance daily metrics.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 48, period: hour}
         columns:
           - name: raw_live_daily_row_id
             data_tests: [not_null, unique]
       - name: product_card_daily
         description: Product Card traffic daily metrics.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 48, period: hour}
         columns:
           - name: raw_product_card_daily_row_id
             data_tests: [not_null, unique]
       - name: products
         description: Product Master snapshot rows with canonical JSON payload.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 7, period: day}
         columns:
           - name: raw_product_row_id
             data_tests: [not_null, unique]
       - name: skus
         description: SKU Master snapshot rows.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 7, period: day}
         columns:
           - name: raw_sku_row_id
             data_tests: [not_null, unique]
       - name: influencer_roster
         description: Influencer roster snapshot rows.
+        config:
+          loaded_at_field: _ingested_at
+          freshness:
+            warn_after: {count: 7, period: day}
         columns:
           - name: raw_influencer_row_id
             data_tests: [not_null, unique]

@@ -1,0 +1,12 @@
+selectors:
+  - name: dq_blocking
+    description: Blocking data-quality tests that must pass.
+    definition:
+      method: tag
+      value: dq_blocking
+
+  - name: dq_warning
+    description: Non-blocking anomaly tests for operational review.
+    definition:
+      method: tag
+      value: dq_warning
