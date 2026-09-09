@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pendulum
 from airflow.sdk import DAG, get_current_context, setup, task, teardown
+from airflow.task.trigger_rule import TriggerRule
 from airflow.timetables.interval import CronDataIntervalTimetable
 
 from ecommerce_pipeline.ingestion.audit_lifecycle import (
@@ -40,7 +41,18 @@ from ecommerce_pipeline.ingestion.schema_drift import (
 from ecommerce_pipeline.ingestion.schema_validation import validate_schema
 from ecommerce_pipeline.ingestion.source_registry import list_source_names
 from ecommerce_pipeline.ingestion.transaction import transaction_scope
+from ecommerce_pipeline.monitoring.pipeline_monitoring import (
+    build_pipeline_alerts,
+    build_pipeline_snapshot,
+    load_ingestion_telemetry,
+    record_pipeline_alerts,
+    record_pipeline_monitoring_run,
+    send_webhook_alert,
+    update_alert_delivery,
+)
 from ecommerce_pipeline.orchestration.dbt_runner import (
+    DbtCommandError,
+    parse_dbt_command_summary,
     resolve_backfill_vars,
     run_dbt_command,
 )
@@ -52,6 +64,17 @@ _WORK_TASK_IDS = (
     "extract_and_validate_registered_files",
 )
 _SUPPORTED_AIRFLOW_RUN_TYPES = {"manual", "scheduled", "backfill"}
+_MONITORED_TASK_IDS = (
+    "create_airflow_ingestion_run",
+    *_WORK_TASK_IDS,
+    "finalize_airflow_ingestion_run",
+    "resolve_dbt_runtime_context",
+    "dbt_compile",
+    "dbt_source_freshness",
+    "dbt_run_transformations",
+    "dbt_test_blocking",
+    "dbt_test_warning",
+)
 
 
 def _connect_application_postgres():
@@ -64,6 +87,29 @@ def _connect_application_postgres():
     )
     connection.autocommit = False
     return connection
+
+
+def _run_dbt_with_monitoring_summary(
+    arguments: list[str],
+    *,
+    dbt_vars: dict[str, str],
+    timeout_seconds: int,
+) -> dict[str, int]:
+    task_instance = get_current_context()["task_instance"]
+    try:
+        output = run_dbt_command(
+            arguments,
+            variables=dbt_vars,
+            timeout_seconds=timeout_seconds,
+        )
+    except DbtCommandError as exc:
+        summary = parse_dbt_command_summary(exc.output)
+        task_instance.xcom_push(key="monitoring_summary", value=summary)
+        raise
+
+    summary = parse_dbt_command_summary(output)
+    task_instance.xcom_push(key="monitoring_summary", value=summary)
+    return summary
 
 
 def _get_run_file_audit_counts(
@@ -456,10 +502,10 @@ with DAG(
         pool="dbt_transform",
         execution_timeout=timedelta(minutes=10),
     )
-    def dbt_source_freshness(dbt_vars: dict[str, str]) -> None:
-        run_dbt_command(
+    def dbt_source_freshness(dbt_vars: dict[str, str]) -> dict[str, int]:
+        return _run_dbt_with_monitoring_summary(
             ["source", "freshness"],
-            variables=dbt_vars,
+            dbt_vars=dbt_vars,
             timeout_seconds=480,
         )
 
@@ -482,10 +528,10 @@ with DAG(
         pool="dbt_transform",
         execution_timeout=timedelta(minutes=30),
     )
-    def dbt_test_blocking(dbt_vars: dict[str, str]) -> None:
-        run_dbt_command(
+    def dbt_test_blocking(dbt_vars: dict[str, str]) -> dict[str, int]:
+        return _run_dbt_with_monitoring_summary(
             ["test", "--exclude", "tag:dq_warning"],
-            variables=dbt_vars,
+            dbt_vars=dbt_vars,
             timeout_seconds=1500,
         )
 
@@ -493,12 +539,144 @@ with DAG(
         pool="dbt_transform",
         execution_timeout=timedelta(minutes=15),
     )
-    def dbt_test_warning(dbt_vars: dict[str, str]) -> None:
-        run_dbt_command(
+    def dbt_test_warning(dbt_vars: dict[str, str]) -> dict[str, int]:
+        return _run_dbt_with_monitoring_summary(
             ["test", "--selector", "dq_warning"],
-            variables=dbt_vars,
+            dbt_vars=dbt_vars,
             timeout_seconds=720,
         )
+
+    @task(
+        trigger_rule=TriggerRule.ALL_DONE,
+        execution_timeout=timedelta(minutes=5),
+    )
+    def monitor_pipeline_run() -> None:
+        context = get_current_context()
+        dag_run = context["dag_run"]
+        task_instance = context["task_instance"]
+
+        states_by_run = task_instance.get_task_states(
+            dag_id=task_instance.dag_id,
+            task_ids=list(_MONITORED_TASK_IDS),
+            run_ids=[task_instance.run_id],
+        )
+        states = states_by_run.get(task_instance.run_id, {})
+        task_states = {
+            task_id: states.get(task_id, "missing")
+            for task_id in _MONITORED_TASK_IDS
+        }
+
+        ingestion_run_id = task_instance.xcom_pull(
+            task_ids="create_airflow_ingestion_run",
+            dag_id=task_instance.dag_id,
+            run_id=task_instance.run_id,
+            default=None,
+        )
+        if not isinstance(ingestion_run_id, int):
+            ingestion_run_id = None
+
+        freshness_summary = task_instance.xcom_pull(
+            task_ids="dbt_source_freshness",
+            dag_id=task_instance.dag_id,
+            run_id=task_instance.run_id,
+            key="monitoring_summary",
+            default=None,
+        )
+        blocking_summary = task_instance.xcom_pull(
+            task_ids="dbt_test_blocking",
+            dag_id=task_instance.dag_id,
+            run_id=task_instance.run_id,
+            key="monitoring_summary",
+            default=None,
+        )
+        warning_summary = task_instance.xcom_pull(
+            task_ids="dbt_test_warning",
+            dag_id=task_instance.dag_id,
+            run_id=task_instance.run_id,
+            key="monitoring_summary",
+            default=None,
+        )
+
+        started_at = dag_run.start_date
+        if started_at is None:
+            raise RuntimeError("DagRun start_date is required for monitoring")
+        observed_at = pendulum.now("UTC")
+        slow_threshold_seconds = int(
+            os.getenv("PIPELINE_SLOW_THRESHOLD_SECONDS", "180")
+        )
+        notify_warnings = os.getenv(
+            "PIPELINE_ALERT_NOTIFY_WARNINGS", "false"
+        ).strip().lower() in {"1", "true", "yes", "on"}
+
+        connection = _connect_application_postgres()
+        snapshot = None
+        alerts = ()
+        alert_ids = ()
+        try:
+            with transaction_scope(connection):
+                ingestion = load_ingestion_telemetry(
+                    connection, ingestion_run_id
+                )
+                snapshot = build_pipeline_snapshot(
+                    dag_id=task_instance.dag_id,
+                    dag_run_id=task_instance.run_id,
+                    run_type=_normalize_airflow_run_type(dag_run.run_type),
+                    ingestion_run_id=ingestion_run_id,
+                    started_at=started_at,
+                    observed_at=observed_at,
+                    slow_threshold_seconds=slow_threshold_seconds,
+                    task_states=task_states,
+                    ingestion=ingestion,
+                    dbt_freshness_summary=freshness_summary,
+                    dbt_blocking_summary=blocking_summary,
+                    dbt_warning_summary=warning_summary,
+                )
+                alerts = build_pipeline_alerts(
+                    snapshot, notify_warnings=notify_warnings
+                )
+                monitoring_run_id = record_pipeline_monitoring_run(
+                    connection, snapshot
+                )
+                alert_ids = record_pipeline_alerts(
+                    connection,
+                    monitoring_run_id=monitoring_run_id,
+                    snapshot=snapshot,
+                    alerts=alerts,
+                )
+
+            webhook_url = os.getenv("PIPELINE_ALERT_WEBHOOK_URL") or None
+            for alert_id, alert in zip(alert_ids, alerts, strict=True):
+                delivery = send_webhook_alert(
+                    webhook_url=webhook_url,
+                    snapshot=snapshot,
+                    alert=alert,
+                )
+                with transaction_scope(connection):
+                    update_alert_delivery(
+                        connection,
+                        pipeline_alert_id=alert_id,
+                        status=delivery.status,
+                        error=delivery.error,
+                    )
+        finally:
+            connection.close()
+
+        if snapshot is None:
+            raise RuntimeError("Monitoring snapshot was not created")
+        print(
+            "pipeline_monitoring "
+            f"status={snapshot.status} duration={snapshot.duration_seconds:.3f}s "
+            f"alerts={len(alerts)}"
+        )
+        if snapshot.status == "failed":
+            failed = ", ".join(
+                f"{task_id}={state}"
+                for task_id, state in task_states.items()
+                if state != "success"
+            )
+            raise RuntimeError(
+                "Pipeline monitoring observed upstream failure: " + failed
+            )
 
     @teardown(on_failure_fail_dagrun=True)
     def finalize_airflow_ingestion_run(ingestion_run_id: int) -> None:
@@ -650,6 +828,7 @@ with DAG(
     transformed = dbt_run_transformations(dbt_vars)
     blocking_tests = dbt_test_blocking(dbt_vars)
     warning_tests = dbt_test_warning(dbt_vars)
+    monitoring = monitor_pipeline_run()
 
     (
         ingestion_finalizer
@@ -659,6 +838,7 @@ with DAG(
         >> transformed
         >> blocking_tests
         >> warning_tests
+        >> monitoring
     )
 
 

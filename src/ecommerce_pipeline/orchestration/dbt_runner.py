@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 from collections.abc import Mapping, Sequence
 from datetime import datetime
@@ -8,6 +9,16 @@ from zoneinfo import ZoneInfo
 
 _DEFAULT_DBT_PROJECT_DIR = Path("/opt/airflow/dbt")
 _ALLOWED_BACKFILL_VARS = {"backfill_start", "backfill_end"}
+
+
+class DbtCommandError(RuntimeError):
+    def __init__(self, *, operation: str, exit_code: int, output: str) -> None:
+        self.operation = operation
+        self.exit_code = exit_code
+        self.output = output
+        super().__init__(
+            f"dbt command failed: operation={operation!r}, exit_code={exit_code}"
+        )
 
 
 def resolve_backfill_vars(
@@ -100,8 +111,37 @@ def run_dbt_command(
         print(output)
     if completed.returncode != 0:
         operation = " ".join(arguments)
-        raise RuntimeError(
-            f"dbt command failed: operation={operation!r}, "
-            f"exit_code={completed.returncode}"
+        raise DbtCommandError(
+            operation=operation,
+            exit_code=completed.returncode,
+            output=output,
         )
     return output
+
+
+def parse_dbt_command_summary(output: str) -> dict[str, int]:
+    clean_output = re.sub(r"\x1b\[[0-9;]*m", "", output)
+    summary_matches = re.findall(
+        r"Done\. PASS=(\d+) WARN=(\d+) ERROR=(\d+) "
+        r"SKIP=(\d+).*?TOTAL=(\d+)",
+        clean_output,
+    )
+    if summary_matches:
+        passed, warned, errored, skipped, total = summary_matches[-1]
+        return {
+            "pass": int(passed),
+            "warn": int(warned),
+            "error": int(errored),
+            "skip": int(skipped),
+            "total": int(total),
+        }
+
+    freshness_states = re.findall(
+        r"\b(PASS|WARN|ERROR) freshness of\b",
+        clean_output,
+    )
+    counts = {"pass": 0, "warn": 0, "error": 0, "skip": 0, "total": 0}
+    for state in freshness_states:
+        counts[state.lower()] += 1
+    counts["total"] = len(freshness_states)
+    return counts
