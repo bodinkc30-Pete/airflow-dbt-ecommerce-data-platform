@@ -1,0 +1,218 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Role-playing calendar dimension with date_key 0 reserved for unknown dates.
+    columns:
+      - name: date_key
+        data_tests: [not_null, unique]
+
+  - name: dim_product
+    description: Current Product dimension plus a single unknown member.
+    columns:
+      - name: product_key
+        data_tests: [not_null, unique]
+
+  - name: dim_sku
+    description: Current SKU dimension linked to Product, preserving unresolved products via unknown member.
+    columns:
+      - name: sku_key
+        data_tests: [not_null, unique]
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+
+  - name: dim_influencer
+    description: Provisional influencer entity dimension plus a single unknown member.
+    columns:
+      - name: influencer_key
+        data_tests: [not_null, unique]
+
+  - name: fact_order_items
+    description: One current order-SKU line with role-playing dates and conformed Product, SKU, Influencer dimensions.
+    columns:
+      - name: order_item_key
+        data_tests: [not_null, unique]
+      - name: sku_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sku')
+                field: sku_key
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: influencer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_influencer')
+                field: influencer_key
+      - name: created_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: paid_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: ready_to_ship_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: shipped_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: delivered_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: cancelled_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_shop_daily
+    description: Daily shop performance fact; rates are non-additive measures.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_campaign_daily
+    description: Daily advertising fact; ROI and cost-per-order are non-additive measures.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_live_daily
+    description: Daily LIVE commerce fact; rate measures are non-additive.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_product_card_daily
+    description: Daily Product Card traffic and conversion fact; rate measures are non-additive.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_influencer_observation
+    description: One influencer roster source observation with time-varying metrics.
+    columns:
+      - name: influencer_observation_key
+        data_tests: [not_null, unique]
+      - name: influencer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_influencer')
+                field: influencer_key
+      - name: observation_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_orders
+    description: One current order row for order-level monetary and lifecycle measures.
+    columns:
+      - name: order_key
+        data_tests: [not_null, unique]
+      - name: created_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: paid_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: ready_to_ship_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: shipped_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: delivered_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: cancelled_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
