@@ -6,6 +6,7 @@ from airflow.sdk import DAG, get_current_context, setup, task, teardown
 from airflow.task.trigger_rule import TriggerRule
 from airflow.timetables.interval import CronDataIntervalTimetable
 
+from ecommerce_pipeline.cloud import sync_s3_landing
 from ecommerce_pipeline.ingestion.audit_lifecycle import (
     mark_file_failed,
     mark_file_processing,
@@ -203,8 +204,25 @@ with DAG(
 
     @task
     def discover_demo_source_files() -> dict[str, list[dict[str, str]]]:
-        """Discover portfolio-safe demo input files using the ingestion service."""
-        input_directory = os.environ["DATA_DEMO_DIR"]
+        """Discover configured source files using the ingestion service."""
+        data_mode = os.getenv("DATA_MODE", "demo").strip().lower()
+        if data_mode == "demo":
+            input_directory = os.environ["DATA_DEMO_DIR"]
+        elif data_mode == "private":
+            input_directory = os.environ["DATA_PRIVATE_DIR"]
+        elif data_mode == "s3":
+            input_directory = os.getenv(
+                "DATA_CLOUD_STAGING_DIR",
+                "/opt/airflow/data/cloud",
+            )
+            sync_s3_landing(
+                bucket=os.environ["S3_DATA_BUCKET"],
+                prefix=os.getenv("S3_DATA_PREFIX", "landing"),
+                destination=input_directory,
+            )
+        else:
+            raise RuntimeError(f"Unsupported DATA_MODE: {data_mode}")
+
         discovered = discover_all_sources(input_directory)
 
         return {

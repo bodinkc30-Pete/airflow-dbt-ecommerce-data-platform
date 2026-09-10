@@ -1,0 +1,20 @@
+project_name = "project06"
+environment  = "dev"
+aws_region   = "ap-southeast-1"
+
+# ECR is created by this stack. Push this immutable image tag before bootstrap.
+airflow_image_tag = "v1.0.0"
+
+# HTTPS identity is intentionally external to this reference stack.
+airflow_domain_name     = "airflow.example.com"
+airflow_certificate_arn = "arn:aws:acm:ap-southeast-1:123456789012:certificate/REPLACE_ME"
+
+# Keep the ALB internal unless a reviewed public access boundary is required.
+airflow_alb_internal  = true
+airflow_ingress_cidrs = ["10.0.0.0/8"]
+
+# Bootstrap first with zero services, then set to 1 after the bootstrap task succeeds.
+ecs_desired_count = 0
+
+# Leave false when PrivateLink/S3 endpoints cover required AWS services.
+enable_nat_gateway = false

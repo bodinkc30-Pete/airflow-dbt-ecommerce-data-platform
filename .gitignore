@@ -61,3 +61,14 @@ Thumbs.db
 *.swp
 ~$*
 dbt/.user.yml
+
+# Terraform local state and private variable values
+**/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+crash.log
+crash.*.log
+**/backend.hcl

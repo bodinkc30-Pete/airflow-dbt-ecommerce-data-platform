@@ -1,0 +1,5 @@
+bucket       = "REPLACE_WITH_EXISTING_TERRAFORM_STATE_BUCKET"
+key          = "project06/dev/terraform.tfstate"
+region       = "ap-southeast-1"
+encrypt      = true
+use_lockfile = true

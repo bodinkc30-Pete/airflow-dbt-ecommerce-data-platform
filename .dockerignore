@@ -27,3 +27,12 @@ venv/
 # Temporary local patch/scratch files
 .part*
 *.tmp
+
+# Terraform local state and private variable values
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/terraform.tfvars
+**/*.auto.tfvars
+**/*.auto.tfvars.json
+**/backend.hcl
