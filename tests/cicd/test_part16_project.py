@@ -70,6 +70,13 @@ def test_ci_docker_runtime_contract() -> None:
         assert token in text
 
 
+def test_ci_docker_runtime_prepares_airflow_writable_directories() -> None:
+    text = _read(CI_WORKFLOW)
+    assert "sudo install -d -o 50000 -g 0 -m 0775 logs" in text
+    assert "sudo install -d -o 50000 -g 0 -m 0775 dbt/target dbt/logs" in text
+    assert "chmod 777" not in text
+
+
 def test_release_workflow_contract() -> None:
     text = _read(RELEASE_WORKFLOW)
     for token in (
