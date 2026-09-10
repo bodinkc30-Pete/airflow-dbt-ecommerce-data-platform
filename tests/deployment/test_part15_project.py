@@ -70,3 +70,11 @@ def test_simple_auth_password_file_is_persistent() -> None:
     assert "AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE" in text
     assert "/opt/airflow/auth/simple_auth_manager_passwords.json" in text
     assert "airflow_auth:/opt/airflow/auth" in text
+
+
+def test_simple_auth_volume_is_writable_on_fresh_docker_volume() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "mkdir -p /opt/airflow/auth" in dockerfile
+    assert "chown airflow:root /opt/airflow/auth" in dockerfile
+    assert "chmod 0775 /opt/airflow/auth" in dockerfile
+    assert dockerfile.index("USER root") < dockerfile.index("USER airflow")

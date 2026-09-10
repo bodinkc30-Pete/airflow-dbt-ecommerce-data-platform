@@ -9,6 +9,12 @@ RUN pip install --no-cache-dir \
     -r /tmp/requirements-dbt.txt \
     -r /tmp/requirements-airflow-cloud.txt
 
+USER root
+RUN mkdir -p /opt/airflow/auth \
+    && chown airflow:root /opt/airflow/auth \
+    && chmod 0775 /opt/airflow/auth
+USER airflow
+
 ENV PYTHONPATH=/opt/airflow/src
 
 COPY --chown=airflow:root src /opt/airflow/src
