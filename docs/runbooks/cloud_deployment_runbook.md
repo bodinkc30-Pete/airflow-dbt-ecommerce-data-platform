@@ -205,9 +205,12 @@ bootstrap task. Do not start duplicate schedulers to work around bootstrap error
 
 ## 10. PART 17 closure rule
 
-Local validation proves only that the deployable definition is internally
-consistent. Mark AWS runtime evidence separately after an observed reviewed
-plan/apply and live ECS/RDS/S3/Airflow checks.
+PART 17 supports two explicitly different closure states.
 
-Never publish Terraform state, real tfvars, runtime secret JSON, FAB passwords,
-RDS credentials, raw private data, or unredacted logs containing PII.
+**Zero-cost/control-plane closure:** local regression must pass, root and deployment identity controls must be validated, Terraform must plan successfully against the real AWS control plane through the reviewed deployment role, and any temporary billable validation resources must be cleaned up. This state must record that no `terraform apply` or live ECS/RDS/S3/ALB/Airflow runtime acceptance occurred.
+
+**Live runtime acceptance:** requires the reviewed domain/ACM boundary, a real plan, explicit cost approval, `terraform apply`, successful database/FAB bootstrap, service stabilization, and observed ECS/RDS/S3/Airflow runtime checks.
+
+If a domain/certificate is unavailable or live cost is intentionally avoided, use the zero-cost closure and do not weaken HTTPS, networking, authentication, or data privacy controls merely to obtain a live demo.
+
+Never publish Terraform state, real tfvars, runtime secret JSON, FAB passwords, RDS credentials, raw private data, or unredacted logs containing PII.

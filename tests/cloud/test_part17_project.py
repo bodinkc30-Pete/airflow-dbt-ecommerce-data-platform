@@ -121,3 +121,16 @@ def test_fab_admin_bootstrap_is_secret_scoped_and_idempotent() -> None:
     assert '"users", "list", "--output", "json"' in bootstrap
     assert '"users",\n        "create"' in bootstrap
     assert "SimpleAuthManager" not in ecs
+
+
+def test_part17_zero_cost_closure_preserves_live_runtime_boundary() -> None:
+    runbook = (ROOT / "docs" / "runbooks" / "cloud_deployment_runbook.md").read_text(
+        encoding="utf-8"
+    )
+    evidence = (ROOT / "docs" / "evidence" / "cloud_infrastructure_part17_20260910.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Zero-cost/control-plane closure" in runbook
+    assert "no `terraform apply`" in runbook
+    assert "live runtime not deployed" in evidence
+    assert "70 to add, 0 to change, 0 to destroy" in evidence

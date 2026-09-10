@@ -72,7 +72,7 @@ normal Airflow runtime secrets but not the administrator login password.
 Final local operational checks after the last auth change produced:
 
 - Docker Compose configuration — PASS.
-- PART 17 cloud tests — 19/19 PASS.
+- PART 17 cloud tests — 20/20 PASS.
 - public repository governance guard — PASS.
 - Terraform final format/validate — PASS.
 - local hardened deployment validator — PASS.
@@ -85,13 +85,25 @@ Final local operational checks after the last auth change produced:
 - AWS/FAB/boto3 package versions — 9.31.0 / 3.7.1 / 1.43.0.
 - tracked Terraform state/real tfvars/backend files — 0 matches.
 - `git diff --check` — PASS.
+- full pytest regression — 390/390 PASS.
 
 The local Compose runtime remains the already accepted development deployment;
 it is regression evidence, not evidence that the new AWS resources exist.
 
-## Deployment boundary
+## AWS control-plane validation - 2026-09-11
 
-PART 17 now has a locally validated AWS deployment definition and runbook. A live
-AWS plan/apply was intentionally not executed in this evidence set. Live AWS
-runtime acceptance must be recorded separately before claiming ECS/RDS/S3/ALB
-production operation.
+AWS account hardening and deployment access were validated without creating the application runtime. Root MFA is enabled and no root access keys exist. A dedicated `project06-console-deployer` IAM user has MFA, no access keys, and only local-login plus assume-role permissions. Terraform access is performed through the `project06-terraform-deployer` role using temporary credentials rather than root.
+
+The AWS CLI login profile required a documented `credential_process` compatibility bridge because the Terraform AWS provider could not consume the CLI `login_session` profile directly. After that correction, `aws sts get-caller-identity` returned the assumed deployment role and Terraform successfully planned through that role.
+
+A dedicated S3 backend bucket was created only to validate the real remote-state path. Versioning, AES256 encryption, and all four S3 public-access blocks were observed before `terraform init` reported a successfully configured S3 backend. No application state was retained; the empty backend bucket and local real-value backend/tfvars files were deleted after validation.
+
+The real AWS-provider speculative plan proposed `70 to add, 0 to change, 0 to destroy` with `ecs_desired_count = 0`. No `terraform apply` was executed. A USD 10 monthly budget guard was verified with 50/80/100 percent actual-spend alerts and a 100 percent forecast alert.
+
+Final AWS resource counts after cleanup were RDS=0, ECS clusters=0, ALB=0, VPC endpoints=0, and S3 buckets=0. Observed Budget ActualSpend at that checkpoint was USD 0.00.
+
+## Deployment boundary and zero-cost closure
+
+PART 17 is closed at **AWS control-plane validated / live runtime not deployed**. There is no owned domain or ACM certificate, so the HTTPS ALB runtime was intentionally not created. This evidence must not be represented as live ECS/RDS/S3/ALB/Airflow production operation.
+
+Reopening live AWS acceptance requires a reviewed domain/certificate decision, a new real plan, explicit cost review, `terraform apply`, bootstrap evidence, and live ECS/RDS/S3/Airflow runtime validation. Until those observations exist, the portfolio claim remains a production-oriented AWS reference deployment validated locally and against the real AWS control plane without a persistent billable application stack.
