@@ -83,9 +83,10 @@ def validate_service_state(service: str) -> None:
 
 def validate_airflow_security(service: str) -> None:
     payload = inspect_container(service)
-    config = payload["Config"]
     host = payload["HostConfig"]
-    if config["User"] != "50000":
+    uid = compose("exec", "-T", service, "id", "-u")
+    require_success(uid, f"resolve effective UID for {service}")
+    if uid.stdout.strip() != "50000":
         raise RuntimeError(f"{service} is not running as Airflow UID 50000")
     security = host.get("SecurityOpt") or []
     if "no-new-privileges:true" not in security:

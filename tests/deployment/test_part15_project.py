@@ -78,3 +78,8 @@ def test_simple_auth_volume_is_writable_on_fresh_docker_volume() -> None:
     assert "chown airflow:root /opt/airflow/auth" in dockerfile
     assert "chmod 0775 /opt/airflow/auth" in dockerfile
     assert dockerfile.index("USER root") < dockerfile.index("USER airflow")
+
+def test_deployment_validator_checks_effective_airflow_uid() -> None:
+    text = VALIDATOR.read_text(encoding="utf-8")
+    assert 'compose("exec", "-T", service, "id", "-u")' in text
+    assert 'config["User"] != "50000"' not in text
