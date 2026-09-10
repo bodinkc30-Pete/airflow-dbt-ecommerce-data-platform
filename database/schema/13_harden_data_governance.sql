@@ -22,6 +22,11 @@ REVOKE ALL ON DATABASE ecommerce FROM PUBLIC;
 GRANT CONNECT ON DATABASE ecommerce TO ecommerce_ingest_writer, ecommerce_transformer, ecommerce_analytics_reader;
 GRANT TEMPORARY ON DATABASE ecommerce TO ecommerce_transformer;
 
+CREATE SCHEMA IF NOT EXISTS analytics_staging;
+CREATE SCHEMA IF NOT EXISTS analytics_identity;
+CREATE SCHEMA IF NOT EXISTS analytics_intermediate;
+CREATE SCHEMA IF NOT EXISTS analytics_marts;
+
 REVOKE ALL ON SCHEMA raw, audit, analytics_staging, analytics_identity,
     analytics_intermediate, analytics_marts FROM PUBLIC;
 
