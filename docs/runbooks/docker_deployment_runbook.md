@@ -112,3 +112,13 @@ until logs identify the specific failing contract.
 Never capture screenshots containing real business data, private filenames,
 credentials, host-user paths, or tokens. Prefer service-health views, Airflow DAG
 states, aggregate persistence checks, and deployment-validator output.
+
+## Local Airflow login recovery
+
+If the Airflow UI returns `401 Unauthorized / Invalid credentials` after an API container replacement, first verify the active auth manager and the configured password-file path before assuming the username is wrong.
+
+For this local deployment, the SimpleAuthManager password file must resolve to `/opt/airflow/auth/simple_auth_manager_passwords.json` on the `airflow_auth` named volume. Recreating `airflow-api-server` must not change that file.
+
+Validation after recovery: confirm the API container is healthy, the configured password path is the mounted volume path, the credential-file checksum is unchanged across recreate, and no new generated admin password appears in startup logs. Never print or commit the credential itself.
+
+Do not use this SimpleAuthManager pattern as the cloud-production authentication design; use the production auth boundary defined in the cloud/security phase.

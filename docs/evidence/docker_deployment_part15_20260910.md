@@ -170,3 +170,13 @@ The seven dbt warnings are the established non-blocking DQ baseline and are not
 deployment regressions. The clean hardened production DagRun remained successful
 with all 13 tasks successful and the dbt transformation completing on its first
 attempt.
+
+## Airflow local-auth persistence hotfix
+
+A real UI login failure exposed a deployment-lifecycle gap: Airflow SimpleAuthManager had generated the local admin password inside the API container writable layer, so the credential was not durable across container replacement.
+
+The local deployment now mounts a dedicated Compose-managed `airflow_auth` named volume at `/opt/airflow/auth` and configures `simple_auth_manager_passwords_file` to use that persistent path.
+
+Runtime validation confirmed successful UI login, identical credential-file checksum before and after an API-server force recreate, healthy API recovery, and zero newly generated admin-password log entries after restart.
+
+This is a local portfolio/development durability control only. SimpleAuthManager remains unsuitable as a production cloud authentication boundary; PART 17 must use a production-grade identity/authentication design rather than promoting this local mechanism unchanged.

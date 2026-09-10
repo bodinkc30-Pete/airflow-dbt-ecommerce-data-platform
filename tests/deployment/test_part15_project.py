@@ -63,3 +63,10 @@ def test_part15_documentation_exists() -> None:
     assert ARCH.exists()
     assert EVIDENCE.exists()
     assert RUNBOOK.exists()
+
+
+def test_simple_auth_password_file_is_persistent() -> None:
+    text = COMPOSE.read_text(encoding="utf-8")
+    assert "AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE" in text
+    assert "/opt/airflow/auth/simple_auth_manager_passwords.json" in text
+    assert "airflow_auth:/opt/airflow/auth" in text
