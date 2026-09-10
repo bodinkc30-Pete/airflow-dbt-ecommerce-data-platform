@@ -1,5 +1,7 @@
 # Airflow + dbt E-commerce Data Platform
 
+[![CI](https://github.com/bodinkc30-Pete/airflow-dbt-ecommerce-data-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bodinkc30-Pete/airflow-dbt-ecommerce-data-platform/actions/workflows/ci.yml)
+
 Production-oriented e-commerce data engineering platform built with PostgreSQL,
 Python, Apache Airflow, dbt Core, Docker, data-quality controls, monitoring,
 recovery tooling, CI/CD, and an AWS reference deployment.
@@ -18,7 +20,7 @@ container hardening, and repeatable validation are all part of the repository.
 | dbt warehouse and data quality | Validated |
 | Monitoring / reliability / recovery | Validated |
 | Governance / privacy / deployment hardening | Validated |
-| CI/CD workflow definitions | Locally validated; GitHub-hosted run pending publication |
+| CI/CD | GitHub-hosted Quality, PostgreSQL + dbt Integration, and Hardened Docker Runtime validated |
 | AWS infrastructure | Real AWS control-plane and Terraform plan validated |
 | Live AWS ECS/RDS/ALB runtime | Not deployed |
 
@@ -185,8 +187,11 @@ GitHub Actions definitions are included for:
 3. isolated Docker/Airflow runtime smoke validation;
 4. tagged immutable container-image release to GHCR with provenance attestation.
 
-Hosted GitHub Actions execution is **not yet claimed** because this repository has
-not been published/configured with a Git remote in the current project state.
+GitHub-hosted execution is validated on the published repository. Accepted run
+`34525456918` completed successfully with all three CI jobs passing: Quality Gate,
+PostgreSQL + dbt Integration, and Hardened Docker Runtime. The Docker job also
+completed the Airflow smoke DAG, artifact upload, and stack teardown. The release
+workflow remains tag-triggered and is not claimed as executed without a release event.
 ## AWS reference deployment
 
 The Terraform reference architecture targets AWS `ap-southeast-1` and includes
@@ -251,7 +256,7 @@ The latest local closure checks recorded:
 | --- | --- |
 | Python compile | PASS |
 | Ruff | PASS |
-| Full pytest regression | 390 PASS |
+| Full pytest regression | 393 PASS |
 | PART 17 cloud-focused tests | 20/20 PASS |
 | Terraform format / validate | PASS |
 | Docker Compose configuration | PASS |
@@ -259,6 +264,7 @@ The latest local closure checks recorded:
 | Airflow DAG import errors | `[]` |
 | PostgreSQL + 4 long-running Airflow services | healthy |
 | Public repository governance guard | PASS |
+| GitHub-hosted CI | 3/3 jobs PASS |
 | Cloud image private `data/` directory | absent |
 
 The clean synthetic CI integration evidence also records:
@@ -297,6 +303,7 @@ tests/                  Unit, integration, failure, deployment, and cloud tests
 - [CI/CD architecture](docs/architecture/cicd_part16.md)
 - [AWS reference infrastructure](docs/architecture/cloud_infrastructure_part17.md)
 - [AWS deployment runbook](docs/runbooks/cloud_deployment_runbook.md)
+- [Portfolio publication evidence](docs/evidence/portfolio_part19_20260911.md)
 ## Technology baseline
 
 - Python 3.12+
@@ -305,7 +312,7 @@ tests/                  Unit, integration, failure, deployment, and cloud tests
 - dbt Core 1.12.0 / dbt-postgres 1.11.0
 - Docker Compose
 - Terraform with AWS provider 6.62.0
-- GitHub Actions workflow definitions
+- GitHub Actions
 
 ## Portfolio boundary
 
@@ -318,6 +325,7 @@ live AWS production deployment, and does not treat pending business retention
 policy as an engineering assumption. Those boundaries are deliberate parts of
 the design.
 
-Future GitHub-hosted Actions results, screenshots, and status badges belong to
-the separately evidenced portfolio-publication stage after a repository remote
-and publication boundary are explicitly approved.
+GitHub-hosted Actions results and the CI status badge are now part of the
+portfolio-publication evidence. The publication boundary was opened only after
+repository governance, deep Git-history screening, and hosted CI acceptance passed.
+See [`docs/evidence/portfolio_part19_20260911.md`](docs/evidence/portfolio_part19_20260911.md).
