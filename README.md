@@ -65,6 +65,10 @@ Airflow orchestrates the end-to-end flow.
 Monitoring, alerts, incidents, lineage, and recovery evidence are persisted
 through the operational control plane.
 ```
+
+The tested marts relationships are documented in the
+[warehouse logical ERD](docs/architecture/warehouse_erd.md).
+
 ## Data platform layers
 
 ### Ingestion and audit
@@ -301,7 +305,9 @@ tests/                  Unit, integration, failure, deployment, and cloud tests
 - [Governance and security](docs/architecture/governance_security_part14.md)
 - [Docker deployment](docs/architecture/docker_deployment_part15.md)
 - [CI/CD architecture](docs/architecture/cicd_part16.md)
+- [Warehouse logical ERD](docs/architecture/warehouse_erd.md)
 - [AWS reference infrastructure](docs/architecture/cloud_infrastructure_part17.md)
+- [AWS Glue and Redshift interoperability design](docs/architecture/aws_glue_redshift_interoperability.md)
 - [AWS deployment runbook](docs/runbooks/cloud_deployment_runbook.md)
 - [Portfolio publication evidence](docs/evidence/portfolio_part19_20260911.md)
 ## Technology baseline
