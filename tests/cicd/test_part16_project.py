@@ -31,6 +31,20 @@ def test_ci_workflow_security_and_triggers() -> None:
     _assert_sha_pinned_actions(text)
 
 
+
+def test_ci_uses_node24_compatible_action_pins() -> None:
+    ci = _read(CI_WORKFLOW)
+    release = _read(RELEASE_WORKFLOW)
+    setup_sha = "5fda3b95a4ea91299a34e894583c3862153e4b97"
+    upload_sha = "b7c566a772e6b6bfb58ed0dc250532a479d7789f"
+    old_setup_sha = "a26af69be951a213d495a4c3e4e4022e16d87065"
+    old_upload_sha = "ea165f8d65b6e75b540449e92b4886f43607fa02"
+    assert ci.count(f"actions/setup-python@{setup_sha}") == 3
+    assert release.count(f"actions/setup-python@{setup_sha}") == 1
+    assert ci.count(f"actions/upload-artifact@{upload_sha}") == 3
+    assert old_setup_sha not in ci + release
+    assert old_upload_sha not in ci + release
+
 def test_ci_quality_gate_contract() -> None:
     text = _read(CI_WORKFLOW)
     for token in (
