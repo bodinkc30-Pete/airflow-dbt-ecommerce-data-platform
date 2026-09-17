@@ -19,6 +19,7 @@ def _run_airflow(*args: str) -> subprocess.CompletedProcess[str]:
         text=True,
         capture_output=True,
         check=False,
+        timeout=60,
     )
 
 
