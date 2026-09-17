@@ -27,6 +27,31 @@ Python 74.4%, PLpgSQL 10.5%, SQL 10.2%, HCL 4.8%, and Dockerfile 0.1%.
 
 ![GitHub language composition](docs/evidence/images/github_languages_20260917_full.png)
 
+## Engineering lifecycle
+
+```text
+DESIGN -> BUILD -> RUN -> TEST -> BREAK -> DETECT
+-> DIAGNOSE -> CONTAIN -> FIX -> RECOVER -> VERIFY
+-> RCA -> PREVENT -> MONITOR -> CAPTURE EVIDENCE
+```
+
+The repository treats production operation and failure recovery as part of the
+delivery lifecycle, not as work added only after a pipeline is built.
+
+## Truth preservation
+
+```text
+Observed != Estimated
+Missing != Zero
+Unknown != False
+Synthetic != Real
+Technical SUCCESS != Data SUCCESS
+```
+
+Portfolio claims and operational decisions are tied to observed evidence. Synthetic
+CI data is never presented as private business data, and a technically successful
+pipeline is not treated as proof that the underlying data is correct.
+
 ## Project status
 
 | Area | Status |
