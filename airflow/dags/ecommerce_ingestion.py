@@ -167,6 +167,14 @@ with DAG(
     max_active_tasks=4,
     dagrun_timeout=timedelta(hours=2),
     is_paused_upon_creation=True,
+    default_args={
+        # One automatic retry absorbs transient failures (connection reset,
+        # lock timeout) instead of failing the whole DagRun immediately.
+        # Tasks that must not retry (e.g. dbt_run_transformations manages
+        # its own retry policy) override this at the task level.
+        "retries": 1,
+        "retry_delay": timedelta(minutes=2),
+    },
     tags=["ecommerce", "ingestion", "dbt", "production"],
 ) as dag:
 
@@ -265,6 +273,11 @@ with DAG(
                     decision = decide_file_processing(
                         registration,
                         current_ingestion_run_id=ingestion_run_id,
+                        stale_processing_ttl=timedelta(
+                            minutes=int(
+                                os.getenv("STALE_PROCESSING_TTL_MINUTES", "60")
+                            )
+                        ),
                     )
 
                     if decision.action == "block":
