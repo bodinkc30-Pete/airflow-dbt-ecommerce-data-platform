@@ -149,3 +149,14 @@ def test_part16_documentation_exists() -> None:
         "docs/runbooks/cicd_runbook.md",
     ):
         assert (ROOT / relative).is_file(), relative
+
+
+def test_ci_postgres_service_preloads_statement_observability() -> None:
+    text = _read(CI_WORKFLOW)
+    for token in (
+        "Align PostgreSQL observability baseline",
+        "job.services.postgres.id",
+        "ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements'",
+        "SHOW shared_preload_libraries",
+    ):
+        assert token in text
