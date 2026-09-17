@@ -21,7 +21,7 @@ container hardening, and repeatable validation are all part of the repository.
 | CI/CD and runtime validation | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | AWS / Terraform | [`infra/aws/terraform`](infra/aws/terraform) |
 | Reliability evidence / runbooks | [`docs/evidence`](docs/evidence), [`docs/runbooks`](docs/runbooks) |
-| Failure injection / incident drill | [`tests/failure/test_postgres_lock_incident.py`](tests/failure/test_postgres_lock_incident.py), [`docs/runbooks/failure_injection_runbook.md`](docs/runbooks/failure_injection_runbook.md) |
+| Failure injection / incident drills (5 scenarios) | [`tests/failure`](tests/failure), [`docs/runbooks/failure_injection_runbook.md`](docs/runbooks/failure_injection_runbook.md) |
 
 GitHub language composition after the PostgreSQL operations work is visible below:
 Python 74.4%, PLpgSQL 10.5%, SQL 10.2%, HCL 4.8%, and Dockerfile 0.1%.
