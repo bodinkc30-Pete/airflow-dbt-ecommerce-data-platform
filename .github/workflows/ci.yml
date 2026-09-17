@@ -36,7 +36,7 @@ jobs:
       - name: Unit and static tests
         run: |
           mkdir -p reports
-          pytest tests --ignore=tests/integration --junitxml=reports/pytest-unit.xml
+          pytest tests --ignore=tests/integration --ignore=tests/failure --junitxml=reports/pytest-unit.xml
       - name: Public repository guard
         run: python scripts/validate_public_repo.py
       - name: Deployment static validation
@@ -125,7 +125,7 @@ jobs:
       - name: PostgreSQL integration tests
         run: |
           mkdir -p reports
-          pytest tests/integration --junitxml=reports/pytest-integration.xml
+          pytest tests/integration tests/failure --junitxml=reports/pytest-integration.xml
       - name: Upload dbt and integration artifacts
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

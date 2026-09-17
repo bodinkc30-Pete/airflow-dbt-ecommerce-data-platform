@@ -51,7 +51,7 @@ def test_ci_quality_gate_contract() -> None:
         "quality:",
         "python -m compileall",
         "ruff check src tests airflow scripts",
-        "pytest tests --ignore=tests/integration",
+        "pytest tests --ignore=tests/integration --ignore=tests/failure",
         "validate_public_repo.py",
         "validate_deployment.py --static-only",
     ):
@@ -67,7 +67,7 @@ def test_ci_data_integration_contract() -> None:
         "bootstrap_ci_database.py --seed",
         "dbt source freshness",
         "dbt build",
-        "pytest tests/integration",
+        "pytest tests/integration tests/failure",
     ):
         assert token in text
 
