@@ -11,6 +11,22 @@ idempotent ingestion, incremental processing, lineage and auditability, warehous
 modeling, failure handling, observability, performance measurement, governance,
 container hardening, and repeatable validation are all part of the repository.
 
+## Recruiter quick evidence
+
+| Capability | Repository evidence |
+| --- | --- |
+| PostgreSQL operations / troubleshooting | [`src/ecommerce_pipeline/reliability/postgres_diagnostics.py`](src/ecommerce_pipeline/reliability/postgres_diagnostics.py), [`sql/operations/postgres_diagnostics.sql`](sql/operations/postgres_diagnostics.sql) |
+| Airflow orchestration | [`airflow/dags/ecommerce_ingestion.py`](airflow/dags/ecommerce_ingestion.py) |
+| dbt modeling / data quality | [`dbt/models/marts`](dbt/models/marts), [`dbt/tests`](dbt/tests) |
+| CI/CD and runtime validation | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| AWS / Terraform | [`infra/aws/terraform`](infra/aws/terraform) |
+| Reliability evidence / runbooks | [`docs/evidence`](docs/evidence), [`docs/runbooks`](docs/runbooks) |
+
+GitHub language composition after the PostgreSQL operations work is visible below:
+Python 74.4%, PLpgSQL 10.5%, SQL 10.2%, HCL 4.8%, and Dockerfile 0.1%.
+
+![GitHub language composition](docs/evidence/images/github_languages_20260917_full.png)
+
 ## Project status
 
 | Area | Status |
@@ -192,10 +208,12 @@ GitHub Actions definitions are included for:
 4. tagged immutable container-image release to GHCR with provenance attestation.
 
 GitHub-hosted execution is validated on the published repository. Accepted run
-`34525456918` completed successfully with all three CI jobs passing: Quality Gate,
-PostgreSQL + dbt Integration, and Hardened Docker Runtime. The Docker job also
-completed the Airflow smoke DAG, artifact upload, and stack teardown. The release
-workflow remains tag-triggered and is not claimed as executed without a release event.
+`35174269748` for commit `035d495` completed successfully with all three CI jobs
+passing: Quality Gate, PostgreSQL + dbt Integration, and Hardened Docker Runtime.
+The integration job also verified the `pg_stat_statements` preload baseline before
+bootstrap; the Docker job completed the Airflow smoke DAG, artifact upload, and
+stack teardown. The release workflow remains tag-triggered and is not claimed as
+executed without a release event.
 ## AWS reference deployment
 
 The Terraform reference architecture targets AWS `ap-southeast-1` and includes
@@ -260,7 +278,7 @@ The latest local closure checks recorded:
 | --- | --- |
 | Python compile | PASS |
 | Ruff | PASS |
-| Full pytest regression | 393 PASS |
+| Full local pytest regression | 401 PASS at the PART 20.1 implementation checkpoint |
 | PART 17 cloud-focused tests | 20/20 PASS |
 | Terraform format / validate | PASS |
 | Docker Compose configuration | PASS |
@@ -275,7 +293,7 @@ The clean synthetic CI integration evidence also records:
 
 - dbt source freshness: 8/8 PASS;
 - dbt build: 257 PASS / 0 WARN / 0 ERROR;
-- PostgreSQL integration tests: 32/32 PASS;
+- PostgreSQL integration tests: 33/33 PASS;
 - isolated Airflow smoke DagRun: 13/13 tasks SUCCESS on try 1.
 
 Evidence documents under [`docs/evidence`](docs/evidence/) retain the failure,

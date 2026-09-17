@@ -59,3 +59,27 @@ automatically terminate blocking sessions, change PostgreSQL parameters, or clai
 that the local demo workload represents commercial production scale. Future
 failure-injection work may create controlled blockers to validate detection under
 an active incident.
+
+## Hosted CI parity incident and acceptance
+
+The first hosted CI run after PART 20.1 (`35140395743`) failed only in the
+PostgreSQL diagnostics integration test. Quality Gate had already passed and the
+dbt build completed with `257 PASS / 0 WARN / 0 ERROR`.
+
+The hosted error was:
+
+`pg_stat_statements must be loaded via "shared_preload_libraries"`.
+
+Root-cause comparison showed that the local Docker PostgreSQL runtime already
+preloaded `pg_stat_statements`, while the clean GitHub Actions `postgres:17.10`
+service did not. The failure was therefore a CI/runtime parity gap, not a query or
+transaction-ownership defect.
+
+A CI contract test was added first and observed failing. The integration job was
+then changed only at PostgreSQL startup to set `shared_preload_libraries`, restart
+the service, wait for readiness, and verify the setting before bootstrap.
+
+Hosted CI run `35174269748` for commit `035d495` then completed successfully:
+Quality Gate PASS, PostgreSQL + dbt Integration PASS, and Hardened Docker Runtime
+PASS. The integration suite reported `33 passed in 1.30s`, including the new live
+PostgreSQL diagnostics test.
