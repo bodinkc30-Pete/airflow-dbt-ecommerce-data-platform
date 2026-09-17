@@ -164,10 +164,10 @@ The pipeline adds:
 
 Planned downstream flow:
 
-`raw_product_card_daily`
--> `stg_product_card_daily`
--> `int_product_performance`
--> `fct_product_card_daily`
+`raw.product_card_daily`
+-> `stg_product_card`
+-> `int_product_card_daily_current`
+-> `fact_product_card_daily`
 
 The product-card fact model will support traffic, conversion, and product
 performance analysis.

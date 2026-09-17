@@ -122,10 +122,10 @@ The pipeline adds:
 
 Planned downstream flow:
 
-`raw_shop_daily`
--> `stg_shop_daily`
--> `int_daily_sales`
--> `fct_daily_sales`
+`raw.shop_daily`
+-> `stg_shop_analytics`
+-> `int_daily_performance`
+-> `fact_shop_daily`
 
 Shop Analytics will also contribute to cross-source reconciliation models.
 

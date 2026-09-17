@@ -5,6 +5,10 @@ with creators as (
         count(*) as order_item_count
     from {{ ref('int_order_items_current') }}
     where creator_handle is not null
+        -- Blank/whitespace-only handles normalize to NULL; they must not
+        -- form a group, otherwise this model violates its not_null/unique
+        -- contract on normalized_creator_handle.
+        and {{ normalize_influencer_identity('creator_handle') }} is not null
     group by 1
 ),
 
