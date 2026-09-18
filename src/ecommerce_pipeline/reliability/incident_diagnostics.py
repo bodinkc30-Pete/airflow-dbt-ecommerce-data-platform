@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
 
+from psycopg2 import OperationalError
 from psycopg2.extensions import connection as PgConnection
 from psycopg2.extras import Json
 
@@ -31,6 +32,12 @@ _ALLOWED_ROOT_CAUSE_CATEGORIES = {
     "configuration",
     "unknown",
 }
+
+
+def classify_postgres_connection_failure(error: BaseException) -> RootCauseCategory:
+    if isinstance(error, OperationalError):
+        return "database"
+    return "unknown"
 
 
 @dataclass(frozen=True)

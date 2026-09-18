@@ -1,4 +1,4 @@
-# PART 20.2A โ€” PostgreSQL Lock Failure Drill Evidence
+# PART 20.2A — PostgreSQL Lock Failure Drill Evidence
 
 Date: 2026-09-17 (Asia/Bangkok)
 

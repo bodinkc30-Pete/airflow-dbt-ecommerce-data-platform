@@ -42,3 +42,21 @@ blocking/failure condition is gone and the affected operation can finish.
 If the drill cannot clean itself up, stop and inspect PostgreSQL state before
 running another scenario. Never stack additional failure injections on top of an
 unresolved synthetic incident.
+
+## PostgreSQL dependency-unavailable drill
+
+1. Reserve an unused local TCP port; do not stop the real PostgreSQL service.
+2. Probe that endpoint with a short explicit connection timeout.
+3. Confirm the failure is classified as `database_unavailable` and the exception
+   type is `OperationalError`.
+4. Map the incident to the existing `database` root-cause category.
+5. Confirm no transaction, retry loop, or audit write is started for the failed
+   dependency probe.
+6. Probe the normal local PostgreSQL endpoint.
+7. Verify the connection succeeds and returns database identity plus server
+   version.
+8. Close the probe connection and capture the failure/recovery evidence.
+
+This drill validates dependency detection and recovery only. It must not be used
+to justify automatic retries or failover behavior that the architecture does not
+currently own.

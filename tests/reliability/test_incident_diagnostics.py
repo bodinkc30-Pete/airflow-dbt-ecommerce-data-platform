@@ -103,3 +103,15 @@ def test_resolve_pipeline_alert_updates_without_committing() -> None:
     )
     assert any("UPDATE audit.pipeline_alerts" in query for query, _ in connection.queries)
     assert not hasattr(connection, "commit")
+
+
+def test_classify_postgres_connection_failure_as_database() -> None:
+    from psycopg2 import OperationalError
+
+    from ecommerce_pipeline.reliability.incident_diagnostics import (
+        classify_postgres_connection_failure,
+    )
+
+    error = OperationalError("connection refused")
+
+    assert classify_postgres_connection_failure(error) == "database"

@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 
+import psycopg2
 from psycopg2.extensions import connection as PgConnection
 
 
@@ -37,6 +38,15 @@ class QueryStat:
     total_exec_time_ms: float
     mean_exec_time_ms: float
     rows: int
+
+
+@dataclass(frozen=True)
+class PostgresDependencyProbe:
+    available: bool
+    category: str
+    error_type: str | None
+    database: str | None
+    server_version: str | None
 
 
 @dataclass(frozen=True)
@@ -208,3 +218,44 @@ def diagnostics_to_dict(diagnostics: PostgresDiagnostics) -> dict[str, object]:
     payload = asdict(diagnostics)
     payload["captured_at"] = diagnostics.captured_at.isoformat()
     return payload
+
+
+def probe_postgres_dependency(
+    *,
+    host: str,
+    port: int,
+    database: str,
+    user: str,
+    password: str,
+    connect_timeout_seconds: int = 1,
+) -> PostgresDependencyProbe:
+    try:
+        connection = psycopg2.connect(
+            host=host,
+            port=port,
+            dbname=database,
+            user=user,
+            password=password,
+            connect_timeout=connect_timeout_seconds,
+        )
+    except psycopg2.OperationalError as exc:
+        return PostgresDependencyProbe(
+            available=False,
+            category='database_unavailable',
+            error_type=type(exc).__name__,
+            database=None,
+            server_version=None,
+        )
+
+    try:
+        database_name, server_version = _load_metadata(connection)
+    finally:
+        connection.close()
+
+    return PostgresDependencyProbe(
+        available=True,
+        category='healthy',
+        error_type=None,
+        database=database_name,
+        server_version=server_version,
+    )
