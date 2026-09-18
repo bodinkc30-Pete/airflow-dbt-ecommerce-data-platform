@@ -242,6 +242,16 @@ The integration job verified the `pg_stat_statements` preload baseline before
 bootstrap and the PostgreSQL dependency-unavailability drill; the Docker job
 completed the Airflow smoke DAG, artifact upload, and stack teardown. The release workflow remains tag-triggered and is not claimed as
 executed without a release event.
+## Evidence snapshots
+
+The following screenshots are captured from the published repository evidence.
+They show the current hosted CI acceptance and the controlled PostgreSQL
+dependency-unavailability recovery drill.
+
+[![GitHub Actions: all three CI jobs passed](docs/evidence/images/ci-success-35298098882.svg)](https://github.com/bodinkc30-Pete/airflow-dbt-ecommerce-data-platform/actions/runs/35298098882)
+
+[![PostgreSQL recovery drill evidence](docs/evidence/images/postgres-recovery-drill-evidence.svg)](docs/evidence/postgres_unavailable_failure_drill_part20_2_20260917.md)
+
 ## AWS reference deployment
 
 The Terraform reference architecture targets AWS `ap-southeast-1` and includes
