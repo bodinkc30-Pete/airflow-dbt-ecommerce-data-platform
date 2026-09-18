@@ -36,7 +36,12 @@ row counts as the source, and must leave no scratch database behind.
 ## Backup -> restore -> verify steps
 
 1. Confirm `pg_dump` and `pg_restore` are on `PATH`; skip or abort cleanly if
-   the client tools are unavailable.
+   the client tools are unavailable. Also compare client and server major
+   versions: `pg_dump`/`pg_restore` refuse to run against a newer server major
+   (for example a CI runner shipping client 16 against a `postgres:17`
+   service). A client older than the server is an environment limitation, not
+   drill evidence — skip the drill and provision matching client tools instead
+   of forcing the run.
 2. Record `backup_started_at`, then dump the source database with
    `pg_dump --format=custom` into the drill output directory.
 3. Record `backup_finished_at` and the dump file size in bytes.

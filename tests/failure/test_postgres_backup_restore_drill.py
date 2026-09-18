@@ -1,5 +1,7 @@
 import os
+import re
 import shutil
+import subprocess
 
 import pytest
 
@@ -22,12 +24,61 @@ def _env() -> dict[str, object]:
     }
 
 
+def _binary_major_version(binary: str) -> int | None:
+    """Major version of a PostgreSQL client binary, or None if unavailable."""
+    path = shutil.which(binary)
+    if path is None:
+        return None
+    result = subprocess.run(
+        [path, "--version"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    match = re.search(r"(\d+)", result.stdout)
+    return int(match.group(1)) if match else None
+
+
+def _server_major_version(env: dict[str, object]) -> int:
+    connection = connect_postgres(
+        host=str(env["host"]),
+        port=int(env["port"]),
+        database=str(env["database"]),
+        user=str(env["user"]),
+        password=str(env["password"]),
+    )
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW server_version")
+            version = str(cursor.fetchone()[0])
+    finally:
+        connection.close()
+    return int(re.match(r"(\d+)", version).group(1))
+
+
 @pytest.mark.skipif(
     shutil.which("pg_dump") is None or shutil.which("pg_restore") is None,
     reason="pg_dump not available",
 )
 def test_backup_restore_drill_produces_rpo_rto_evidence(tmp_path) -> None:
     env = _env()
+    # pg_dump/pg_restore refuse to run against a newer server major (e.g. a
+    # CI runner shipping client 16 against a postgres:17 service). That is a
+    # tooling limitation of the environment, not drill evidence — skip it.
+    server_major = _server_major_version(env)
+    dump_major = _binary_major_version("pg_dump")
+    restore_major = _binary_major_version("pg_restore")
+    if (
+        dump_major is None
+        or restore_major is None
+        or dump_major < server_major
+        or restore_major < server_major
+    ):
+        pytest.skip(
+            "pg_dump/pg_restore major "
+            f"({dump_major}/{restore_major}) older than server major ({server_major})"
+        )
     evidence = None
     try:
         evidence = run_backup_restore_drill(
