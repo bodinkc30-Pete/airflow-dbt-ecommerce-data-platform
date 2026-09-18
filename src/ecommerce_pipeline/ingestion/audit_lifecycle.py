@@ -64,6 +64,8 @@ def mark_file_processing(
             processing_started_at = CURRENT_TIMESTAMP,
             processing_finished_at = NULL,
             rows_discovered = %s,
+            rows_loaded = 0,
+            rows_rejected = 0,
             error_message = NULL
         WHERE ingestion_file_id = %s
         RETURNING

@@ -176,7 +176,16 @@ CREATE TABLE IF NOT EXISTS raw.orders (
         CHECK (_source_row_number > 0),
 
     CONSTRAINT chk_raw_orders_file_hash_length
-        CHECK (char_length(_file_hash) = 64)
+        CHECK (char_length(_file_hash) = 64),
+
+    -- Blank/whitespace IDs would pass NOT NULL but normalize to NULL in
+    -- staging, causing silent row loss. Align with the not-blank CHECKs
+    -- already present on raw.products, raw.skus, and raw.influencer_roster.
+    CONSTRAINT chk_raw_orders_order_id_not_blank
+        CHECK (btrim(order_id) <> ''),
+
+    CONSTRAINT chk_raw_orders_sku_id_not_blank
+        CHECK (btrim(sku_id) <> '')
 );
 
 

@@ -130,10 +130,10 @@ The pipeline adds:
 
 Planned downstream flow:
 
-`raw_campaign_daily`
--> `stg_campaign_daily`
--> `int_marketing_performance`
--> `fct_campaign_daily`
+`raw.campaign_daily`
+-> `stg_campaign`
+-> `int_campaign_daily_current`
+-> `fact_campaign_daily`
 
 The campaign fact model will support marketing efficiency and attribution
 analysis.

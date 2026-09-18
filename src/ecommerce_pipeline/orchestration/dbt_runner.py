@@ -2,6 +2,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -140,6 +141,15 @@ def parse_dbt_command_summary(output: str) -> dict[str, int]:
         r"\b(PASS|WARN|ERROR) freshness of\b",
         clean_output,
     )
+    if not freshness_states and clean_output.strip():
+        # dbt changed its output format: parsing matched nothing, so the
+        # counts below would silently report zero warnings/errors. Make the
+        # mismatch loud instead of feeding monitoring a false clean bill.
+        print(
+            "WARNING: dbt output did not match any known summary format; "
+            "parsed counts may be inaccurate.",
+            file=sys.stderr,
+        )
     counts = {"pass": 0, "warn": 0, "error": 0, "skip": 0, "total": 0}
     for state in freshness_states:
         counts[state.lower()] += 1

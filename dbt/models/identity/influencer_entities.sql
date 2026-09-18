@@ -52,6 +52,10 @@ entity_rollup as (
         min(pipeline_run_id) as first_pipeline_run_id,
         max(pipeline_run_id) as last_pipeline_run_id
     from mapped
+    -- NULL keys never match each other in the `join ... using (...)` below,
+    -- so they would be dropped silently. Make the exclusion explicit; the
+    -- not-blank contract is enforced upstream (chk_raw_influencer_roster_name_not_blank).
+    where influencer_entity_key is not null
     group by
         influencer_entity_key,
         normalized_influencer_name

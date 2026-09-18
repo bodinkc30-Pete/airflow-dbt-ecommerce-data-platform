@@ -29,7 +29,13 @@ select
     creator_bridge.influencer_requires_manual_review,
     case
         when orders.creator_handle is null then 'no_creator'
-        else creator_bridge.creator_identity_match_status
+        -- Blank/whitespace handles never join to the bridge (it excludes
+        -- NULL-normalized handles); coalesce so NULL cannot leak through
+        -- accepted_values tests, which do not flag NULL.
+        else coalesce(
+            creator_bridge.creator_identity_match_status,
+            'unmatched_influencer_entity'
+        )
     end as creator_identity_match_status
 from orders
 left join catalog

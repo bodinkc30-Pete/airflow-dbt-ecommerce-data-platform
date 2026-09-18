@@ -512,6 +512,14 @@ def send_webhook_alert(
     if not webhook_url:
         return WebhookDeliveryResult(status="not_configured")
 
+    # Allow only HTTPS endpoints: rejects file://, ftp://, and plain HTTP so a
+    # misconfigured env var cannot be abused for SSRF or credential leakage.
+    if not webhook_url.lower().startswith("https://"):
+        return WebhookDeliveryResult(
+            status="failed",
+            error="Webhook URL must use the https:// scheme",
+        )
+
     payload = {
         "dag_id": snapshot.dag_id,
         "dag_run_id": snapshot.dag_run_id,

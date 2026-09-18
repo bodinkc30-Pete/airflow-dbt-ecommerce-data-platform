@@ -31,6 +31,7 @@ class FileRegistrationResult:
     file_hash_sha256: str
     status: str
     is_duplicate: bool
+    processing_started_at: datetime | None = None
 
 
 def _hash_stream(stream: BinaryIO, chunk_size: int = 1024 * 1024) -> str:
@@ -86,7 +87,8 @@ def find_registered_file(
             ingestion_run_id,
             source_name,
             file_hash_sha256,
-            status
+            status,
+            processing_started_at
         FROM audit.ingestion_files
         WHERE source_name = %s
           AND file_hash_sha256 = %s
@@ -114,6 +116,7 @@ def find_registered_file(
         file_hash_sha256=row[3].strip(),
         status=row[4],
         is_duplicate=True,
+        processing_started_at=row[5],
     )
 
 

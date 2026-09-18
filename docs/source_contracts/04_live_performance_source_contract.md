@@ -128,10 +128,10 @@ The pipeline adds:
 
 Planned downstream flow:
 
-`raw_live_daily`
--> `stg_live_daily`
--> `int_live_performance`
--> `fct_live_daily`
+`raw.live_daily`
+-> `stg_live`
+-> `int_live_daily_current`
+-> `fact_live_daily`
 
 The LIVE fact model will support performance, conversion, and revenue
 attribution analysis.

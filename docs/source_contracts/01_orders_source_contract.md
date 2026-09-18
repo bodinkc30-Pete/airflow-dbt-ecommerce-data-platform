@@ -93,11 +93,11 @@ batch and source file.
 
 Planned downstream flow:
 
-`raw_orders`
+`raw.orders`
 -> `stg_orders`
--> `int_order_items`
--> `fct_orders`
--> `fct_daily_sales`
+-> `int_order_items_current`
+-> `fact_orders`
+-> `fact_shop_daily`
 
 ## Failure Policy
 
