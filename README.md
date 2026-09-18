@@ -21,7 +21,7 @@ container hardening, and repeatable validation are all part of the repository.
 | CI/CD and runtime validation | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | AWS / Terraform | [`infra/aws/terraform`](infra/aws/terraform) |
 | Reliability evidence / runbooks | [`docs/evidence`](docs/evidence), [`docs/runbooks`](docs/runbooks) |
-| Failure injection / incident drills (5 scenarios) | [`tests/failure`](tests/failure), [`docs/runbooks/failure_injection_runbook.md`](docs/runbooks/failure_injection_runbook.md) |
+| Failure injection / incident drills | [`tests/failure/test_postgres_lock_incident.py`](tests/failure/test_postgres_lock_incident.py), [`tests/failure/test_postgres_unavailable_incident.py`](tests/failure/test_postgres_unavailable_incident.py), [`docs/runbooks/failure_injection_runbook.md`](docs/runbooks/failure_injection_runbook.md) |
 
 GitHub language composition after the PostgreSQL operations work is visible below:
 Python 74.4%, PLpgSQL 10.5%, SQL 10.2%, HCL 4.8%, and Dockerfile 0.1%.
@@ -176,7 +176,9 @@ records, latest-health views, open-alert views, and incident-resolution metadata
 The project treats failure handling as part of the platform contract. Validated
 recovery scenarios include transient dbt failure with retry, blocking synthetic
 data-quality incidents, task timeout, scheduler process recovery, and a real
-PostgreSQL deadlock recovered by the configured Airflow retry policy.
+PostgreSQL deadlock recovered by the configured Airflow retry policy. Controlled
+failure drills additionally verify PostgreSQL blocker detection/release and
+database-dependency unavailability followed by verified reconnection.
 
 Incident records retain root-cause category, remediation, recovery DagRun, and
 verification details so operational closure is auditable rather than represented
@@ -304,7 +306,7 @@ The latest local closure checks recorded:
 | --- | --- |
 | Python compile | PASS |
 | Ruff | PASS |
-| Full local pytest regression | 401 PASS at the PART 20.1 implementation checkpoint |
+| Service-free Quality Gate regression | 370 PASS at the PART 20.2B checkpoint |
 | PART 17 cloud-focused tests | 20/20 PASS |
 | Terraform format / validate | PASS |
 | Docker Compose configuration | PASS |
@@ -319,7 +321,7 @@ The clean synthetic CI integration evidence also records:
 
 - dbt source freshness: 8/8 PASS;
 - dbt build: 257 PASS / 0 WARN / 0 ERROR;
-- PostgreSQL integration tests: 33/33 PASS;
+- PostgreSQL integration + failure drills: 37/37 PASS locally at the PART 20.2B checkpoint;
 - isolated Airflow smoke DagRun: 13/13 tasks SUCCESS on try 1.
 
 Evidence documents under [`docs/evidence`](docs/evidence/) retain the failure,
