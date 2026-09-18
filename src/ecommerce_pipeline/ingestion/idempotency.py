@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from ecommerce_pipeline.ingestion.file_registry import (
@@ -106,6 +106,6 @@ def _is_stale_processing(
     if started_at.tzinfo is None:
         now = datetime.now()
     else:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
     return now - started_at > stale_processing_ttl
