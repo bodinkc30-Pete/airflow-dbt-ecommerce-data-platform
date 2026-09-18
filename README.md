@@ -236,11 +236,11 @@ GitHub Actions definitions are included for:
 4. tagged immutable container-image release to GHCR with provenance attestation.
 
 GitHub-hosted execution is validated on the published repository. Accepted run
-`35174269748` for commit `035d495` completed successfully with all three CI jobs
+`35298098882` for commit `5545b76` completed successfully with all three CI jobs
 passing: Quality Gate, PostgreSQL + dbt Integration, and Hardened Docker Runtime.
-The integration job also verified the `pg_stat_statements` preload baseline before
-bootstrap; the Docker job completed the Airflow smoke DAG, artifact upload, and
-stack teardown. The release workflow remains tag-triggered and is not claimed as
+The integration job verified the `pg_stat_statements` preload baseline before
+bootstrap and the PostgreSQL dependency-unavailability drill; the Docker job
+completed the Airflow smoke DAG, artifact upload, and stack teardown. The release workflow remains tag-triggered and is not claimed as
 executed without a release event.
 ## AWS reference deployment
 
